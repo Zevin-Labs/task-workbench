@@ -1,0 +1,82 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { TaskStore } from '../lib/host/store.js'
+import { ReviewStore } from '../lib/host/review-store.js'
+import { ReviewService } from '../lib/host/review-service.js'
+import { createReviewTools } from '../lib/host/review-tools.js'
+import { userActor } from '../lib/host/service.js'
+
+const DAILY_FILE = [
+  '---', 'title: 日复盘', 'type: review-daily', 'format: 1', 'created: 2026-11-04', 'updated: 2026-11-05',
+  '---', '', '# 日复盘', '', '## 记录', '',
+  '- `2026-11-05`｜更新：2026-11-05 21:50',
+  '  今天把复盘功能的数据层写完了。',
+  '  明天接 UI。', '',
+].join('\n')
+
+async function makeService() {
+  const root = await mkdtemp(join(tmpdir(), 'ptw-review-tool-'))
+  const now = () => new Date('2026-11-05T10:00:00')
+  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
+  const taskStore = new TaskStore({ settings, persistSettings: () => {}, now })
+  const store = new ReviewStore({ settings, persistSettings: () => {}, now, isDataRootReady: () => true })
+  const service = new ReviewService({ store, taskStore, stateDir: join(root, 'state'), now })
+  const file = join(settings.dataRoot, '复盘', '日复盘.md')
+  await mkdir(join(settings.dataRoot, '复盘'), { recursive: true })
+  await writeFile(file, DAILY_FILE, 'utf8')
+  return { root, service, cleanup: () => rm(root, { recursive: true, force: true }) }
+}
+
+test('review-tools: 只有只读工具（list / get），没有写工具', async (t) => {
+  const env = await makeService()
+  t.after(env.cleanup)
+  const tools = createReviewTools(env.service)
+  assert.deepEqual(tools.map((tool) => tool.name), ['ptw_review_list', 'ptw_review_get'])
+  for (const name of ['ptw_review_create', 'ptw_review_update', 'ptw_review_delete', 'ptw_review_save']) {
+    assert.equal(tools.some((tool) => tool.name === name), false, `${name} 不应存在`)
+  }
+  for (const tool of tools) {
+    assert.match(tool.description, /只读/)
+  }
+  // 工具不接收写入参数
+  const listProps = Object.keys(tools[0].parameters.properties)
+  assert.deepEqual(listProps, ['kind', 'from', 'to'])
+  assert.deepEqual(tools[1].parameters.required, ['kind', 'key'])
+})
+
+test('review-tools: AI 能读复盘列表与完整正文', async (t) => {
+  const env = await makeService()
+  t.after(env.cleanup)
+  const [listTool, getTool] = createReviewTools(env.service)
+
+  const listed = await listTool.execute({ kind: 'daily' })
+  assert.equal(listed.ok, true)
+  assert.match(listed.message, /复盘共 1 条/)
+  assert.match(listed.message, /2026-11-05/)
+  assert.equal(listed.data.reviews.length, 1)
+  assert.equal(listed.data.reviews[0].preview, '今天把复盘功能的数据层写完了。\n明天接 UI。')
+  assert.equal(listed.data.reviews[0].text, undefined)
+
+  const got = await getTool.execute({ kind: 'daily', key: '2026-11-05' })
+  assert.equal(got.ok, true)
+  assert.match(got.message, /今天把复盘功能的数据层写完了。\n明天接 UI。/)
+  assert.equal(got.data.review.kind, 'daily')
+
+  // AI 侧没有写入入口：service 层对 agent actor 兜底拒绝
+  await assert.rejects(
+    env.service.save('daily', '2026-11-05', { text: 'AI 想写' }, { kind: 'agent', id: 'agent:test' }),
+    (error) => error.code === 'permission-denied',
+  )
+})
+
+test('review-tools: 键格式错误返回结构化错误', async (t) => {
+  const env = await makeService()
+  t.after(env.cleanup)
+  const [, getTool] = createReviewTools(env.service)
+  await assert.rejects(getTool.execute({ kind: 'weekly', key: '2026-11-05' }), (error) => error.code === 'validation-error')
+  const created = await env.service.save('daily', '2026-11-05', { text: '人写的' }, userActor())
+  assert.equal(created.created, false, '已有记录时是更新')
+})

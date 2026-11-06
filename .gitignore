@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+test-tmp/
+coverage/
+/data/
+
+.playwright-mcp/
+
+# 打包产物（npm pack）
+*.tgz

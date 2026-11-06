@@ -1,0 +1,5 @@
+# 任务管理：Host 半边（HTTP API + AI 工具 + Markdown 读写）。
+# 浏览器半边由 package.json 的 dsh.client 声明加载，不在这里挂行。
+- insert:
+    - id: personal-task-workbench
+      name: dsh-personal-task-workbench

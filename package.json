@@ -1,0 +1,67 @@
+{
+  "name": "dsh-personal-task-workbench",
+  "version": "0.3.0",
+  "description": "Local-first task manager for DeepSeek Harness: today/week/all-task views, single-day and multi-day tasks with optional times, an idea pool, and daily/weekly/monthly reviews that agents can read but never write. · 任务管理 + 想法池 + 复盘（日/周/月），人与 AI 共用同一套写网关。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/core/*.js",
+    "lib/host/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "skills/**"
+  ],
+  "engines": {
+    "node": ">=24",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check lib/index.js && node --check lib/client.js && node --test tests/*.test.mjs",
+    "pack": "npm pack"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "task-management",
+    "todo",
+    "productivity",
+    "markdown",
+    "review"
+  ],
+  "author": "Zevin <zhuzw1990@Outlook.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zevin-Labs/personal-task-workbench.git"
+  },
+  "homepage": "https://github.com/Zevin-Labs/personal-task-workbench#readme",
+  "bugs": {
+    "url": "https://github.com/Zevin-Labs/personal-task-workbench/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
