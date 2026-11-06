@@ -43,7 +43,8 @@
     "test:cross": "node --test tests/wiring.test.mjs tests/settings.test.mjs tests/skills.test.mjs",
     "check": "node --check lib/index.js && node --check lib/client.js",
     "verify": "npm run check && npm test",
-    "pack": "npm pack"
+    "pack": "npm pack",
+    "release": "bash scripts/release.sh"
   },
   "keywords": [
     "dsh",
