@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 一条命令发版：定向/全量测试 → 升版本 → 推 GitHub → npm publish → GitHub Release。
+# 一条命令发版：全量测试 + 打包校验 → 升版本 → 推 GitHub → npm publish → GitHub Release。
 # 用法：
 #   bash scripts/release.sh                # 交互式：问版本类型、问确认、问 npm token
 #   bash scripts/release.sh patch          # 直接指定 patch / minor / major / 1.2.3
@@ -7,6 +7,7 @@
 #   bash scripts/release.sh --dry-run      # 只打印将要执行的步骤，不改任何东西
 #
 # 设计前提：仓库根有 package.json，origin 指向 GitHub，npm 账号已登录（2FA 用 Bypass 2FA token）。
+# 若 npm 报 EPERM（~/.npm 里有 root 属主文件）：先 sudo chown -R 501:20 ~/.npm。
 set -euo pipefail
 
 DRY_RUN=0
@@ -66,12 +67,13 @@ case "$BUMP" in
 esac
 
 if [ "$DRY_RUN" != 1 ] && [ "$ASSUME_YES" != 1 ]; then
-  read -r -p "将执行：测试 → 升版本($BUMP) → 推 GitHub → npm publish。确认？[y/N] " ANSWER || die "需要交互确认；非交互环境请加 --yes"
+  read -r -p "将执行：测试 + 打包校验 → 升版本($BUMP) → 推 GitHub → npm publish。确认？[y/N] " ANSWER || die "需要交互确认；非交互环境请加 --yes"
   [[ "$ANSWER" =~ ^[Yy]$ ]] || { echo "已取消"; exit 0; }
 fi
 
-say "1/5 测试（npm run verify）"
+say "1/5 测试与打包校验（npm run verify + npm run pack:check）"
 run npm run verify
+run npm run pack:check
 
 say "2/5 升版本 + 本地提交 + 打 tag"
 run npm version "$BUMP" -m "release: v%s"
