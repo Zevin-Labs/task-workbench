@@ -45,7 +45,7 @@ function createFakeCtx() {
 test('wiring: apply() 注册任务/想法/复盘三类工具 + 复盘路由，复盘无写工具', async (t) => {
   const env = await loadPlugin()
   t.after(env.restore)
-  assert.equal(env.mod.name, 'personal-task-workbench')
+  assert.equal(env.mod.name, 'task-workbench')
   assert.deepEqual(env.mod.inject, ['tools', 'webServer'])
 
   const fake = createFakeCtx()
@@ -73,7 +73,7 @@ test('wiring: apply() 注册任务/想法/复盘三类工具 + 复盘路由，�
   assert.equal(fake.providers.length, 1)
   const provider = fake.providers[0]()
   const list = await provider.list()
-  assert.equal(list[0].name, 'personal-task-workbench')
+  assert.equal(list[0].name, 'task-workbench')
   const content = await provider.get({ name: list[0].name, locator: list[0].locator })
   assert.match(content.content, /ptw_review_list/)
 })

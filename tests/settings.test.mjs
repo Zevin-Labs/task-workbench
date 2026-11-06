@@ -18,11 +18,11 @@ async function withDshHome(fn) {
   }
 }
 
-test('默认数据根落在 $DSH_HOME/personal-task-workbench/data', async () => {
+test('默认数据根落在 $DSH_HOME/task-workbench/data', async () => {
   await withDshHome(async (root) => {
     const { defaultDataRoot, loadSettings, pluginStateDir } = await import('../lib/host/settings.js')
-    const expected = join(root, 'personal-task-workbench', 'data')
-    assert.equal(pluginStateDir(), join(root, 'personal-task-workbench'))
+    const expected = join(root, 'task-workbench', 'data')
+    assert.equal(pluginStateDir(), join(root, 'task-workbench'))
     assert.equal(defaultDataRoot(), expected)
 
     const settings = loadSettings()
@@ -30,14 +30,14 @@ test('默认数据根落在 $DSH_HOME/personal-task-workbench/data', async () =>
     assert.equal(settings.initialized, false)
 
     // 读取时落一份 settings.json，后续启动复用同一路径
-    const stored = JSON.parse(await readFile(join(root, 'personal-task-workbench', 'settings.json'), 'utf8'))
+    const stored = JSON.parse(await readFile(join(root, 'task-workbench', 'settings.json'), 'utf8'))
     assert.equal(stored.dataRoot, expected)
   })
 })
 
 test('已有 settings.json 的 dataRoot 优先，不会被新默认值覆盖', async () => {
   await withDshHome(async (root) => {
-    const stateDir = join(root, 'personal-task-workbench')
+    const stateDir = join(root, 'task-workbench')
     const customRoot = join(root, 'custom-tasks')
     await mkdir(stateDir, { recursive: true })
     await writeFile(
@@ -55,7 +55,7 @@ test('已有 settings.json 的 dataRoot 优先，不会被新默认值覆盖', a
 
 test('settings.json 里的相对 dataRoot 解析为绝对路径', async () => {
   await withDshHome(async (root) => {
-    const stateDir = join(root, 'personal-task-workbench')
+    const stateDir = join(root, 'task-workbench')
     await mkdir(stateDir, { recursive: true })
     await writeFile(join(stateDir, 'settings.json'), JSON.stringify({ dataRoot: 'relative-data' }))
 

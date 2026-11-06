@@ -8,17 +8,17 @@ updated: 2026-11-06
 
 # 文档索引 · V3.0
 
-> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）；**2026-11-06 已开源到 GitHub，并发布 npm `0.3.0` + GitHub Release `v0.3.0`**。
-> 仓库：https://github.com/Zevin-Labs/personal-task-workbench · npm：`dsh-personal-task-workbench` · Release：v0.3.0（含 tgz）。
+> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）；**2026-11-06 已开源到 GitHub，并发布 npm `0.4.0` + GitHub Release `v0.3.0`**。
+> 仓库：https://github.com/Zevin-Labs/task-workbench · npm：`dsh-task-workbench` · Release：v0.3.0（含 tgz）。
 > V3.0 变化：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）；新增独立复盘数据域——`ReviewService` 唯一写网关、`/ptw/api/reviews*` 路由、`ptw_review_list` / `ptw_review_get` 只读 AI 工具。
-> 数据真源：`data/任务清单/YYYY-MM.md`（任务，按月分片）+ `data/想法池/想法池.md`（想法，单文件长期保留）+ `data/复盘/{日,周,月}复盘.md`（复盘，三个单文件、不按月切）；默认数据根 `$DSH_HOME/personal-task-workbench/data`；均不进 Git。
+> 数据真源：`data/任务清单/YYYY-MM.md`（任务，按月分片）+ `data/想法池/想法池.md`（想法，单文件长期保留）+ `data/复盘/{日,周,月}复盘.md`（复盘，三个单文件、不按月切）；默认数据根 `$DSH_HOME/task-workbench/data`；均不进 Git。
 > 不扫描任何知识库或外部 Daily 系统，不导入旧数据。
 
 ## 现在能做什么
 
 **任务（V1.1 能力保持不变）**
 
-- 侧栏「任务管理」打开面板：**今日 / 本周 / 任务**三个视图。
+- 侧栏「任务工作台」打开面板：**今日 / 本周 / 任务**三个视图。
 - 新建任务：当天（日期 + 可选时间）或跨周期（开始 → 结束，结束必须晚于开始，可选开始/结束时间）；四象限优先级、单行备注；创建后立即写回 Markdown。
 - 今日视图：优先级药丸紧跟任务名（标题行），跨周期任务在 meta 行最前显示剩余天数药丸（今天截止 / 明天截止 / 剩 N 天，按紧迫度着色），其后是区间进度与时间；本周视图顶部一条跨周期摘要条，chip 上同样显示剩余天数（悬停 chip 高亮对应日期列）；任务表显示日期/时间/区间。
 - 编辑（跨周期 ↔ 当天互转、可清空时间）、删除（硬删除，二次确认 + 写前备份）、完成 / 撤销完成（勾选即写回）。
@@ -64,7 +64,7 @@ updated: 2026-11-06
 
 **任务**
 
-1. **数据位置**：默认数据根 `$DSH_HOME/personal-task-workbench/data`，文件名 `任务清单/YYYY-MM.md`；不依赖任何外部笔记/Daily 系统。
+1. **数据位置**：默认数据根 `$DSH_HOME/task-workbench/data`，文件名 `任务清单/YYYY-MM.md`；不依赖任何外部笔记/Daily 系统。
 2. **按月分片**：当月唯一可写，历史只读；不做周文件；周视图是查询。
 3. **优先级**：四象限单字段；**没有「每日核心」**；今日默认重要紧急在前。
 4. **任务类型**：当天（单日）与跨周期（连续开始→结束区间）；不做重复规则/项目方向。
@@ -124,32 +124,32 @@ npm test               # 全量 89（只在发版前 / 跨域改动 / CI 跑）
 **从 npm（推荐）**：
 
 ```sh
-dsh plugin --profile <profile> add dsh-personal-task-workbench
+dsh plugin --profile <profile> add dsh-task-workbench
 ```
 
 **从 GitHub / Release tarball**：
 
 ```sh
-dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench
+dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
 # 或先下载 Release 里的 tgz，再按本地压缩包安装：
-# dsh plugin --profile <profile> add /path/to/dsh-personal-task-workbench-0.3.0.tgz
+# dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.4.0.tgz
 ```
 
 **本地开发**：插件以 `link:` 方式装进 profile，并加入 `dsh.profile.bundles`：
 
-- `~/.dsh/profiles/<profile>/package.json` → `"dsh-personal-task-workbench": "link:/absolute/path/to/personal-task-workbench"`
-- `~/.dsh/profiles/<profile>/node_modules/dsh-personal-task-workbench` → 指向本仓的软链
-- 改 host 代码后：在插件页把「任务管理」组件关/开一次即可热重载；重启 App 后也会加载新代码。
+- `~/.dsh/profiles/<profile>/package.json` → `"dsh-task-workbench": "link:/absolute/path/to/task-workbench"`
+- `~/.dsh/profiles/<profile>/node_modules/dsh-task-workbench` → 指向本仓的软链
+- 改 host 代码后：在插件页把「任务工作台」组件关/开一次即可热重载；重启 App 后也会加载新代码。
 - 改 client 代码后：刷新页面（client bundle 由 DSH HMR 轮询热替换）。
 
 **换机 / 目标机没有仓库**：
 
-1. clone 本仓到固定路径（如 `~/Apps/personal-task-workbench`）。
+1. clone 本仓到固定路径（如 `~/Apps/task-workbench`）。
 2. DSH 版本需在 `engines.dsh` 范围内（`>=0.2.2-rc.1 <0.3.0`），否则安装前直接报 `incompatible-version`。
-3. 侧栏「插件」→ 添加插件 → 填仓库**绝对路径** → 安装；首次打开「任务管理」按提示初始化。
-4. 数据默认建在 `$DSH_HOME/personal-task-workbench/data`，**两台机器不共享**；同步时拷 `data/任务清单/`、`data/想法池/`、`data/复盘/` 与 `data/备份/`。
+3. 侧栏「插件」→ 添加插件 → 填仓库**绝对路径** → 安装；首次打开「任务工作台」按提示初始化。
+4. 数据默认建在 `$DSH_HOME/task-workbench/data`，**两台机器不共享**；同步时拷 `data/任务清单/`、`data/想法池/`、`data/复盘/` 与 `data/备份/`。
 
-目标机没有仓库时：下载 [Release](https://github.com/Zevin-Labs/personal-task-workbench/releases) 里的预构建 tgz，或 `npm run pack` 自己打一个，插件页填 tgz 绝对路径安装。
+目标机没有仓库时：下载 [Release](https://github.com/Zevin-Labs/task-workbench/releases) 里的预构建 tgz，或 `npm run pack` 自己打一个，插件页填 tgz 绝对路径安装。
 
 ## 已知限制（当前版本有意为之）
 

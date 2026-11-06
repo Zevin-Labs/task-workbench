@@ -27,7 +27,7 @@ const required = [
   'icon.svg',
   'locale/en.json',
   'locale/zh.json',
-  'skills/personal-task-workbench/SKILL.md',
+  'skills/task-workbench/SKILL.md',
 ]
 const missing = required.filter((file) => !packed.has(file))
 const forbidden = [...packed].filter(

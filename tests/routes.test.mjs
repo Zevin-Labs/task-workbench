@@ -43,7 +43,7 @@ test('routes: health / init / 增删改查 / 完成', async (t) => {
 
   const health = await call(env.base, 'GET', '/health')
   assert.equal(health.status, 200)
-  assert.equal(health.payload.data.name, 'dsh-personal-task-workbench')
+  assert.equal(health.payload.data.name, 'dsh-task-workbench')
 
   const before = await call(env.base, 'GET', '/bootstrap')
   assert.equal(before.payload.data.initialized, false)

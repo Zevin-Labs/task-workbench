@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>任务管理 + 想法池 + 复盘 · V3.0 整体架构</title>
+<title>任务工作台 + 想法池 + 复盘 · V3.0 整体架构</title>
 <style>
 /* ============================================================
-   任务管理 · V3.0 整体架构（单页 · B 纸张风格）
+   任务工作台 · V3.0 整体架构（单页 · B 纸张风格）
    - 自包含：无外部字体 / 图片 / CDN / JS
    - 依据：docs/01 功能规格 · docs/02 实现架构
    - 实现态：V3.0 已实现并通过真实点击验收
@@ -257,11 +257,11 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
   <!-- ================= 页头 ================= -->
   <header class="masthead">
     <div class="topline">
-      <span>Task Manager + Idea Pool + Review · V3.0 Architecture</span>
+      <span>Task Workbench + Idea Pool + Review · V3.0 Architecture</span>
       <span>2026-11-05 · V3.0 · 实现态</span>
     </div>
 
-    <h1>任务管理 + 想法池 + 复盘<span class="sep">·</span>V3.0 整体架构</h1>
+    <h1>任务工作台 + 想法池 + 复盘<span class="sep">·</span>V3.0 整体架构</h1>
     <p class="lede">
       一个长在 DeepSeek Harness 里的轻量工作台：<b>今日 / 本周 / 任务 / 想法</b>四个视图，今日页底部是<b>复盘区</b>。
       任务支持<b>当天 / 跨周期</b>与可选时间，按月分片；想法池支持<b>四态 + 三档成熟度 + 多行描述</b>，单文件长期保留。
@@ -345,7 +345,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
       <div class="layer">
         <div class="layer-tag">
           <div class="k"><b>L2</b><span>Client</span></div>
-          <h3>任务管理 UI</h3>
+          <h3>任务工作台 UI</h3>
           <p>client 半 · 原生 React · 已实现<br>只发同源请求，不直接接触文件</p>
         </div>
         <div class="layer-body">
@@ -441,7 +441,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
         <div class="layer-tag">
           <div class="k"><b>L5</b><span>Data</span></div>
           <h3>数据层</h3>
-          <p>工作台自有目录 · 真实数据<br>默认 <code>$DSH_HOME/personal-task-workbench/data</code>；不进 Git；当月分片唯一可写</p>
+          <p>工作台自有目录 · 真实数据<br>默认 <code>$DSH_HOME/task-workbench/data</code>；不进 Git；当月分片唯一可写</p>
         </div>
         <div class="layer-body">
           <div class="data-grid">
@@ -479,7 +479,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
               <div class="shard">
                 <span class="sh-tag">备份与状态</span>
                 <div class="sh-path">data/备份/YYYY-MM-DD/</div>
-                <p>写前快照（任务 / 想法 / 复盘），保留 7 天；<code>$DSH_HOME/personal-task-workbench/</code> 只放 settings · ids · idea-ids · writes.log（非数据真源）。</p>
+                <p>写前快照（任务 / 想法 / 复盘），保留 7 天；<code>$DSH_HOME/task-workbench/</code> 只放 settings · ids · idea-ids · writes.log（非数据真源）。</p>
               </div>
             </div>
           </div>
@@ -517,7 +517,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
           <li><b>跨周期</b>显示「跨周期 11/5 → 11/9 · 第 X/Y 天」与可选开始/结束时间</li>
           <li><b>逾期</b>结束日期 &lt; 今天，标「逾期 N 天」（只读标记，不自动改日期）</li>
           <li><b>今天已完成</b>折叠区：<code>完成 == 今天</code> 的任务</li>
-          <li><b>排序</b>优先级 → 全天在前 → 时间 → 文件行序；入口侧栏「任务管理」</li>
+          <li><b>排序</b>优先级 → 全天在前 → 时间 → 文件行序；入口侧栏「任务工作台」</li>
         </ul>
       </article>
 
@@ -813,7 +813,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
       <span class="sec-num">05</span>
       <div class="sec-titles">
         <h2>边界</h2>
-        <p>V3.0 只做任务管理 + 想法池 + 复盘；范围外的事明确不做。</p>
+        <p>V3.0 只做任务工作台 + 想法池 + 复盘；范围外的事明确不做。</p>
       </div>
       <span class="sec-en">Boundaries</span>
     </div>
@@ -828,7 +828,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
           <li>想法池：列表 / 筛选 / 搜索、新建、编辑内容、改状态、删除、四态 + 三档成熟度 + 多行描述</li>
           <li>复盘：日 / 周 / 月三类，窗口内提交 / 编辑 / 清空，周 / 月材料内联，AI 只读</li>
           <li>AI 读任务 + 创建 / 编辑 / 删除任务；读想法 + 新建 / 编辑内容 / 删除想法；只读复盘（各自 service，带审计）</li>
-          <li>侧栏「任务管理」入口（不做数字徽章）</li>
+          <li>侧栏「任务工作台」入口（不做数字徽章）</li>
         </ul>
       </div>
 
@@ -870,7 +870,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
     </div>
     <div class="footer-end">
       <span><b>本图描述 V3.0 实现；架构图截图见 docs/acceptance/架构图.png。</b></span>
-      <span>任务管理 + 想法池 + 复盘 · V3.0 整体架构 · 2026-11-05 · 自包含单页，无外部依赖</span>
+      <span>任务工作台 + 想法池 + 复盘 · V3.0 整体架构 · 2026-11-05 · 自包含单页，无外部依赖</span>
     </div>
   </footer>
 

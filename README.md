@@ -1,7 +1,7 @@
-# Task Manager · Idea Pool · Reviews for DeepSeek Harness
+# Task Workbench · Idea Pool · Reviews for DeepSeek Harness
 
-[![CI](https://github.com/Zevin-Labs/personal-task-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/Zevin-Labs/personal-task-workbench/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/dsh-personal-task-workbench)](https://www.npmjs.com/package/dsh-personal-task-workbench)
+[![CI](https://github.com/Zevin-Labs/task-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/Zevin-Labs/task-workbench/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/dsh-task-workbench)](https://www.npmjs.com/package/dsh-task-workbench)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > A local-first **task manager, idea pool and daily/weekly/monthly review** built as a DeepSeek Harness plugin.
@@ -9,13 +9,13 @@
 > Tasks can be **single-day** or **multi-day** (start date → end date) with **optional times**; no recurrence rules, projects, lunar calendar or push reminders.
 > Ideas have **four states** (todo / doing / done / dropped), **three maturity levels** (low / medium / high), a **multi-line description** and an optional category. Only a human can change an idea's state.
 > Reviews are **daily / weekly / monthly**: the daily review is written for today; the weekly review appears Monday–Sunday and covers the previous calendar week; the monthly review appears on the last day of the month and covers that month (can still be written on the 1st–3rd of the next month). **Review prose is human-only; agents can read it, never write it.**
-> The source of truth is the plugin's own data root (default `$DSH_HOME/personal-task-workbench/data`, not in Git): tasks are sharded by month, ideas and reviews live in single long-lived files.
+> The source of truth is the plugin's own data root (default `$DSH_HOME/task-workbench/data`, not in Git): tasks are sharded by month, ideas and reviews live in single long-lived files.
 
 [中文 README](README.zh-CN.md)
 
 ## Status
 
-**Open-sourced on GitHub on 2026-11-06** and published to npm as [`dsh-personal-task-workbench@0.3.0`](https://www.npmjs.com/package/dsh-personal-task-workbench) ([GitHub Release v0.3.0](https://github.com/Zevin-Labs/personal-task-workbench/releases/tag/v0.3.0)).
+**Open-sourced on GitHub on 2026-11-06** and published to npm as [`dsh-task-workbench@0.4.0`](https://www.npmjs.com/package/dsh-task-workbench) ([GitHub Release v0.4.0](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0)).
 **V3.0 is implemented and accepted with real GUI clicks + agent tool integration on DSH desktop** (2026-11-05).
 Tests: 89 passing with no runtime dependencies and no build step. The full suite is a release/CI gate; day-to-day changes run only the targeted domain tests (see [`docs/05-协作与测试.md`](docs/05-协作与测试.md)).
 
@@ -30,32 +30,32 @@ Requirements: DSH **`>=0.2.2-rc.1 <0.3.0`**, Node **>=24**. The plugin has no bu
 **From npm (recommended):**
 
 ```sh
-dsh plugin --profile <profile> add dsh-personal-task-workbench
+dsh plugin --profile <profile> add dsh-task-workbench
 ```
 
-On desktop you can also use the GUI: **Plugins → Add plugin** and enter the package name `dsh-personal-task-workbench`.
+On desktop you can also use the GUI: **Plugins → Add plugin** and enter the package name `dsh-task-workbench`.
 
 **From GitHub:** in the desktop app open **Plugins → Add plugin** and paste the repository URL, or use the CLI:
 
 ```sh
-dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench
+dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
 ```
 
 **From the release tarball** (prebuilt; no build approval needed): download
-`dsh-personal-task-workbench-0.3.0.tgz` from the [v0.3.0 release](https://github.com/Zevin-Labs/personal-task-workbench/releases/tag/v0.3.0), then:
+`dsh-task-workbench-0.4.0.tgz` from the [v0.4.0 release](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0), then:
 
 ```sh
-dsh plugin --profile <profile> add /path/to/dsh-personal-task-workbench-0.3.0.tgz
+dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.4.0.tgz
 ```
 
 **From a local checkout:**
 
 ```sh
-git clone https://github.com/Zevin-Labs/personal-task-workbench.git
-dsh plugin --profile <profile> add /absolute/path/to/personal-task-workbench
+git clone https://github.com/Zevin-Labs/task-workbench.git
+dsh plugin --profile <profile> add /absolute/path/to/task-workbench
 ```
 
-Then open **Task Manager** in the sidebar. The first open walks you through initializing the data root.
+Then open **Task Workbench** in the sidebar. The first open walks you through initializing the data root.
 
 ## What you get
 
@@ -71,12 +71,12 @@ Then open **Task Manager** in the sidebar. The first open walks you through init
    - **Monthly** — appears on the **last day of the month** (28/29/30/31 as applicable) and covers the month; it can still be written on the 1st–3rd of the next month, with the month's task summary and weekly reviews as material.
    - Reviews outside their writable window are read-only (edit the Markdown directly for history); all three can be edited in place and cleared (second confirmation + backup before writing).
 8. **Edit / delete / complete** — inline task operations; multi-day and single-day can be converted into each other; delete is a hard delete (second confirmation + automatic backup before writing). Idea edit/delete is in a modal; state changes happen on the card pill or in the modal.
-9. **Agents** can read tasks, create/edit/delete tasks (`ptw_*`), read ideas, create/edit idea content and delete ideas (`ptw_idea_*`), and **read** reviews (`ptw_review_list` / `ptw_review_get`). **Completing/uncompleting tasks, changing idea states and writing review prose are human-only** — no agent write tool exists. The plugin ships a `personal-task-workbench` skill that tells the agent which tools to use.
+9. **Agents** can read tasks, create/edit/delete tasks (`ptw_*`), read ideas, create/edit idea content and delete ideas (`ptw_idea_*`), and **read** reviews (`ptw_review_list` / `ptw_review_get`). **Completing/uncompleting tasks, changing idea states and writing review prose are human-only** — no agent write tool exists. The plugin ships a `task-workbench` skill that tells the agent which tools to use.
 
 ## Data layout
 
 ```text
-data root (default $DSH_HOME/personal-task-workbench/data)
+data root (default $DSH_HOME/task-workbench/data)
 ├── 任务清单/YYYY-MM.md    the only writable task shard for the month: ## 任务 / ## 已完成
 ├── 想法池/想法池.md       single idea file: ## 想法 + idea blocks (metadata line + indented description)
 ├── 复盘/日复盘.md         single daily-review file: ## 记录 + review blocks (period key + 2-space-indented prose)
@@ -91,12 +91,12 @@ data root (default $DSH_HOME/personal-task-workbench/data)
 - The values written to Markdown and accepted by the agent tools are the Chinese enums: priority `重要紧急 / 重要不紧急 / 不重要紧急 / 不重要不紧急`; idea status `待实现 / 推进中 / 完成 / 放弃`; maturity `低 / 中 / 高`. The English labels above are translations.
 - Moving machines / backup: copy the whole data root. Two machines do not share data by default.
 - It does not scan other workspaces, note vaults or Daily systems, and imports nothing.
-- Plugin state lives in `$DSH_HOME/personal-task-workbench/` (`settings.json` / `ids.json` / `idea-ids.json` / `writes.log`) and never holds task/idea/review data.
+- Plugin state lives in `$DSH_HOME/task-workbench/` (`settings.json` / `ids.json` / `idea-ids.json` / `writes.log`) and never holds task/idea/review data.
 
 ## Privacy and permission boundary
 
 - **No external network requests**: the plugin only talks to its own same-origin local API (`/ptw/api`) and reads/writes local Markdown with `node:fs` inside the Host process.
-- Data stays in the local data root and `$DSH_HOME/personal-task-workbench/`, never inside the plugin install directory, so upgrades and reinstalls cannot lose it.
+- Data stays in the local data root and `$DSH_HOME/task-workbench/`, never inside the plugin install directory, so upgrades and reinstalls cannot lose it.
 - Agents and the UI share the same service, write gateway, queue, backup and audit log (`writes.log`) — there is no second write path.
 - **Completing/uncompleting tasks, changing idea states and writing reviews are human-only**: there is no agent tool for them, and the service layer returns `permission-denied` for non-user actors.
 - Deletes are hard deletes with an automatic pre-write backup kept for 7 days by default (configurable 1–90 via `backupRetentionDays`).
@@ -109,7 +109,7 @@ lib/
 ├── client.js         # Client entry: sidebar icon + native React panel (hand-written lazy-CJS, no build)
 ├── core/             # task / idea / review contract, grammar, derive, validate, window (pure functions)
 └── host/             # settings / writer / gateway / http / store / service / routes / tools (one set per domain)
-skills/               # bundled `personal-task-workbench` skill (how agents should use the tools)
+skills/               # bundled `task-workbench` skill (how agents should use the tools)
 tests/                # core / service / routes / tools / wiring / settings / skills — temp data roots only
 docs/                 # feature spec + implementation architecture + architecture diagram + collaboration/testing guide (Chinese)
 ```
@@ -117,8 +117,8 @@ docs/                 # feature spec + implementation architecture + architectur
 ## Development
 
 ```bash
-git clone https://github.com/Zevin-Labs/personal-task-workbench.git
-cd personal-task-workbench
+git clone https://github.com/Zevin-Labs/task-workbench.git
+cd task-workbench
 npm run check                      # syntax only
 npm run test:task                  # targeted example: task domain (33 tests)
 npm test                           # full 89-test suite — pre-release / CI only
@@ -126,9 +126,9 @@ npm test                           # full 89-test suite — pre-release / CI onl
 
 - **Targeted by default**: run the test file(s) for the domain you touched; the change → test matrix is in [`docs/05-协作与测试.md`](docs/05-协作与测试.md). The full suite runs before a release, for cross-cutting changes, and in CI — not for every small edit.
 - Automated tests only ever use `os.tmpdir()` data roots and **never touch real `data/`**.
-- Host code changes: toggle the "Task Manager" component off/on in the Plugins page, or restart the app.
+- Host code changes: toggle the "Task Workbench" component off/on in the Plugins page, or restart the app.
 - Client code changes: refresh the page (the client bundle is hot-replaced by DSH HMR).
-- To keep development data inside the repo, point `dataRoot` in `$DSH_HOME/personal-task-workbench/settings.json` at the repo's `data/` (gitignored).
+- To keep development data inside the repo, point `dataRoot` in `$DSH_HOME/task-workbench/settings.json` at the repo's `data/` (gitignored).
 - Typical loop: make the change → targeted tests → local `git commit` (do not push) → publish a batch with [`docs/04-发布与更新.md`](docs/04-发布与更新.md).
 
 ## Scope

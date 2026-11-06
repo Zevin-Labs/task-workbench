@@ -12,8 +12,8 @@ Thanks for taking a look. This is a small, dependency-free DeepSeek Harness plug
 Requirements: Node 24+ and a DSH build matching `engines.dsh` (`>=0.2.2-rc.1 <0.3.0`).
 
 ```sh
-git clone https://github.com/Zevin-Labs/personal-task-workbench.git
-cd personal-task-workbench
+git clone https://github.com/Zevin-Labs/task-workbench.git
+cd task-workbench
 npm run check        # syntax
 npm run test:task    # targeted example: run only the domain you touched
 npm test             # full 89-test suite; CI runs this on every push, and it is the release gate
@@ -22,7 +22,7 @@ npm test             # full 89-test suite; CI runs this on every push, and it is
 There is no build step. To run a local checkout inside DSH:
 
 ```sh
-dsh plugin --profile <profile> add /absolute/path/to/personal-task-workbench
+dsh plugin --profile <profile> add /absolute/path/to/task-workbench
 ```
 
 ## Releasing
