@@ -10,7 +10,7 @@
 
 ## 当前状态
 
-**2026-11-06 已开源到 GitHub。** 当前版本 `0.5.0`：仓库/包名从 `personal-task-workbench` 改为 `task-workbench`，AI 工具前缀从 `ptw_*` 改为 `tw_*`；`dsh-task-workbench@0.5.0` 的 npm 发布待执行。
+**2026-11-06 已开源到 GitHub**，并发布 npm [`dsh-task-workbench@0.5.0`](https://www.npmjs.com/package/dsh-task-workbench)（[GitHub Release v0.5.0](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.5.0) 带 tgz）：仓库/包名从 `personal-task-workbench` 改为 `task-workbench`，AI 工具前缀从 `ptw_*` 改为 `tw_*`。
 **V3.0 已实现，并在 DSH desktop 上完成真实 GUI 点击 + AI 工具联调验收**（2026-11-05）。
 测试：89 个用例；全量测试是发版/CI 门禁，日常改动只跑对应域的定向测试（见 [`docs/05-协作与测试.md`](docs/05-协作与测试.md)）。无运行时依赖，无构建步骤。
 > V3.0：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）+ 独立复盘数据域（`ReviewService`、`/tw/api/reviews*`、`tw_review_*` 只读工具）。

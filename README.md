@@ -15,7 +15,7 @@
 
 ## Status
 
-**Open-sourced on GitHub on 2026-11-06.** Current version: `0.5.0` — the repository/package were renamed from `personal-task-workbench` and the agent tools from `ptw_*` to `tw_*`. npm publication of `dsh-task-workbench@0.5.0` is pending.
+**Open-sourced on GitHub on 2026-11-06.** Current version: [`dsh-task-workbench@0.5.0`](https://www.npmjs.com/package/dsh-task-workbench) ([GitHub Release v0.5.0](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.5.0)) — the repository/package were renamed from `personal-task-workbench` and the agent tools from `ptw_*` to `tw_*`.
 **V3.0 is implemented and accepted with real GUI clicks + agent tool integration on DSH desktop** (2026-11-05).
 Tests: 89 passing with no runtime dependencies and no build step. The full suite is a release/CI gate; day-to-day changes run only the targeted domain tests (see [`docs/05-协作与测试.md`](docs/05-协作与测试.md)).
 

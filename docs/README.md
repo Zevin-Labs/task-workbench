@@ -8,8 +8,8 @@ updated: 2026-11-06
 
 # 文档索引 · V3.0
 
-> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）；**2026-11-06 已开源到 GitHub（`Zevin-Labs/task-workbench`）；当前版本 `0.5.0`（改名 + 工具前缀改为 `tw_*`），npm 发布与 `v0.5.0` Release 待执行**。
-> 仓库：https://github.com/Zevin-Labs/task-workbench · npm：`dsh-task-workbench`（待发布） · Release：v0.4.0（含 tgz；v0.3.0 为历史版本）。
+> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）；**2026-11-06 已开源到 GitHub（`Zevin-Labs/task-workbench`），并发布 npm `dsh-task-workbench@0.5.0` + GitHub Release `v0.5.0`（改名 + 工具前缀改为 `tw_*`）**。
+> 仓库：https://github.com/Zevin-Labs/task-workbench · npm：`dsh-task-workbench@0.5.0` · Release：v0.5.0（含 tgz；v0.3.0 / v0.4.0 为历史版本）。
 > V3.0 变化：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）；新增独立复盘数据域——`ReviewService` 唯一写网关、`/tw/api/reviews*` 路由、`tw_review_list` / `tw_review_get` 只读 AI 工具。
 > 数据真源：`data/任务清单/YYYY-MM.md`（任务，按月分片）+ `data/想法池/想法池.md`（想法，单文件长期保留）+ `data/复盘/{日,周,月}复盘.md`（复盘，三个单文件、不按月切）；默认数据根 `$DSH_HOME/task-workbench/data`；均不进 Git。
 > 不扫描任何知识库或外部 Daily 系统，不导入旧数据。
