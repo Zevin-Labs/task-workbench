@@ -20,7 +20,15 @@
 
 要求：DSH **`>=0.2.2-rc.1 <0.3.0`**、Node **>=24**。插件无构建步骤、无运行时依赖。
 
-**从 GitHub（推荐）**：桌面端「插件 → 添加插件」填仓库地址，或用 CLI：
+**从 npm（推荐）**：装进对应 profile，重启或刷新即可：
+
+```sh
+dsh plugin --profile <profile> add dsh-personal-task-workbench
+```
+
+桌面端也可以走 GUI：**插件 → 添加插件**，搜索 `dsh-personal-task-workbench`。
+
+**从 GitHub**：桌面端「插件 → 添加插件」填仓库地址，或用 CLI：
 
 ```sh
 dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench

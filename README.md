@@ -1,6 +1,7 @@
 # Task Manager · Idea Pool · Reviews for DeepSeek Harness
 
 [![CI](https://github.com/Zevin-Labs/personal-task-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/Zevin-Labs/personal-task-workbench/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/dsh-personal-task-workbench)](https://www.npmjs.com/package/dsh-personal-task-workbench)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > A local-first **task manager, idea pool and daily/weekly/monthly review** built as a DeepSeek Harness plugin.
@@ -25,7 +26,15 @@ Tests: `node --test tests/*.test.mjs` → 89 passing. No runtime dependencies, n
 
 Requirements: DSH **`>=0.2.2-rc.1 <0.3.0`**, Node **>=24**. The plugin has no build step and no runtime dependencies.
 
-**From GitHub (recommended).** In the desktop app open **Plugins → Add plugin** and paste the repository URL, or use the CLI:
+**From npm (recommended):**
+
+```sh
+dsh plugin --profile <profile> add dsh-personal-task-workbench
+```
+
+On desktop you can also use the GUI: **Plugins → Add plugin**, search for `dsh-personal-task-workbench`.
+
+**From GitHub:** in the desktop app open **Plugins → Add plugin** and paste the repository URL, or use the CLI:
 
 ```sh
 dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench

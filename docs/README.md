@@ -115,7 +115,13 @@ node --check lib/index.js && node --check lib/client.js
 
 ## 安装与跨机部署
 
-**从 GitHub / Release tarball（推荐）**：
+**从 npm（推荐）**：
+
+```sh
+dsh plugin --profile <profile> add dsh-personal-task-workbench
+```
+
+**从 GitHub / Release tarball**：
 
 ```sh
 dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench
