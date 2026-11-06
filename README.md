@@ -33,7 +33,7 @@ Requirements: DSH **`>=0.2.2-rc.1 <0.3.0`**, Node **>=24**. The plugin has no bu
 dsh plugin --profile <profile> add dsh-personal-task-workbench
 ```
 
-On desktop you can also use the GUI: **Plugins → Add plugin**, search for `dsh-personal-task-workbench`.
+On desktop you can also use the GUI: **Plugins → Add plugin** and enter the package name `dsh-personal-task-workbench`.
 
 **From GitHub:** in the desktop app open **Plugins → Add plugin** and paste the repository URL, or use the CLI:
 
@@ -82,23 +82,24 @@ data root (default $DSH_HOME/personal-task-workbench/data)
 ├── 复盘/日复盘.md         single daily-review file: ## 记录 + review blocks (period key + 2-space-indented prose)
 ├── 复盘/周复盘.md         single weekly-review file (key = that week's Monday)
 ├── 复盘/月复盘.md         single monthly-review file (key = YYYY-MM)
-└── 备份/<YYYY-MM-DD>/     per-write backups (tasks / ideas / daily / weekly / monthly, kept for 7 days)
+└── 备份/<YYYY-MM-DD>/     per-write backups (tasks / ideas / daily / weekly / monthly; kept 7 days by default, `backupRetentionDays` 1–90)
 ```
 
-- Task line: `- [ ] T-20261105-01｜Workbench dev｜日期：2026-11-05｜时间：09:30｜结束日期：2026-11-12｜结束时间：18:00｜优先级：重要紧急`
-- Idea line: `- I-20261105-01｜Quarterly review notes｜状态：推进中｜成熟度：高｜分类：工作｜创建：2026-11-03｜更新：2026-11-06`, with the description on the following lines indented by two spaces.
+- Task line: ``- [ ] `T-20261105-01`｜Workbench dev｜日期：2026-11-05｜时间：09:30｜结束日期：2026-11-12｜结束时间：18:00｜优先级：重要紧急``
+- Idea line: ``- `I-20261105-01`｜Quarterly review notes｜状态：推进中｜成熟度：高｜分类：工作｜创建：2026-11-03｜更新：2026-11-06``, with the description on the following lines indented by two spaces.
 - Review block: `- \`2026-11-05\`｜更新：2026-11-05 22:05`, with the prose on the following lines indented by two spaces (blank lines separate paragraphs).
+- The values written to Markdown and accepted by the agent tools are the Chinese enums: priority `重要紧急 / 重要不紧急 / 不重要紧急 / 不重要不紧急`; idea status `待实现 / 推进中 / 完成 / 放弃`; maturity `低 / 中 / 高`. The English labels above are translations.
 - Moving machines / backup: copy the whole data root. Two machines do not share data by default.
 - It does not scan other workspaces, note vaults or Daily systems, and imports nothing.
 - Plugin state lives in `$DSH_HOME/personal-task-workbench/` (`settings.json` / `ids.json` / `idea-ids.json` / `writes.log`) and never holds task/idea/review data.
 
 ## Privacy and permission boundary
 
-- **No network requests at all**: the plugin reads and writes local Markdown with `node:fs` inside the Host process.
+- **No external network requests**: the plugin only talks to its own same-origin local API (`/ptw/api`) and reads/writes local Markdown with `node:fs` inside the Host process.
 - Data stays in the local data root and `$DSH_HOME/personal-task-workbench/`, never inside the plugin install directory, so upgrades and reinstalls cannot lose it.
 - Agents and the UI share the same service, write gateway, queue, backup and audit log (`writes.log`) — there is no second write path.
 - **Completing/uncompleting tasks, changing idea states and writing reviews are human-only**: there is no agent tool for them, and the service layer returns `permission-denied` for non-user actors.
-- Deletes are hard deletes with an automatic pre-write backup kept for 7 days.
+- Deletes are hard deletes with an automatic pre-write backup kept for 7 days by default (configurable 1–90 via `backupRetentionDays`).
 
 ## Code layout
 

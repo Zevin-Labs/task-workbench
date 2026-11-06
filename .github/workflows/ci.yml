@@ -29,5 +29,5 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Verify (syntax + full test suite)
         run: npm run verify
-      - name: Pack check
-        run: npm pack --dry-run
+      - name: Pack check (files whitelist)
+        run: npm run pack:check

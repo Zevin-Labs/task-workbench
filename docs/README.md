@@ -109,7 +109,7 @@ tests/                # 三个域的 core / service / routes / tools + settings 
 ```
 
 ```bash
-npm run check          # 语法：node --check lib/index.js lib/client.js
+npm run check          # 语法（两个入口分别 node --check）
 npm run test:task      # 任务域定向：core + service + routes（33）
 npm run test:idea      # 想法域定向：core + service + routes + tools（27）
 npm run test:review    # 复盘域定向：core + service + routes + tools（24）
