@@ -15,8 +15,9 @@
 
 ## Status
 
+**Open-sourced on GitHub on 2026-11-06** and published to npm as [`dsh-personal-task-workbench@0.3.0`](https://www.npmjs.com/package/dsh-personal-task-workbench) ([GitHub Release v0.3.0](https://github.com/Zevin-Labs/personal-task-workbench/releases/tag/v0.3.0)).
 **V3.0 is implemented and accepted with real GUI clicks + agent tool integration on DSH desktop** (2026-11-05).
-Tests: `node --test tests/*.test.mjs` → 89 passing. No runtime dependencies, no build step.
+Tests: 89 passing with no runtime dependencies and no build step. The full suite is a release/CI gate; day-to-day changes run only the targeted domain tests (see [`docs/05-协作与测试.md`](docs/05-协作与测试.md)).
 
 > V3.0 adds the review area at the bottom of the Today view (daily / weekly / monthly, human-written, agent-read-only) and a separate review domain (`ReviewService`, `/ptw/api/reviews*`, `ptw_review_*` read-only tools).
 > V2.0 added the idea pool (single file, four states, three maturity levels, multi-line descriptions, human-only state changes).
@@ -109,7 +110,7 @@ lib/
 └── host/             # settings / writer / gateway / http / store / service / routes / tools (one set per domain)
 skills/               # bundled `personal-task-workbench` skill (how agents should use the tools)
 tests/                # core / service / routes / tools / wiring / settings / skills — temp data roots only
-docs/                 # feature spec + implementation architecture + architecture diagram (Chinese)
+docs/                 # feature spec + implementation architecture + architecture diagram + collaboration/testing guide (Chinese)
 ```
 
 ## Development
@@ -117,14 +118,17 @@ docs/                 # feature spec + implementation architecture + architectur
 ```bash
 git clone https://github.com/Zevin-Labs/personal-task-workbench.git
 cd personal-task-workbench
-node --check lib/index.js && node --check lib/client.js
-node --test tests/*.test.mjs
+npm run check                      # syntax only
+npm run test:task                  # targeted example: task domain (33 tests)
+npm test                           # full 89-test suite — pre-release / CI only
 ```
 
+- **Targeted by default**: run the test file(s) for the domain you touched; the change → test matrix is in [`docs/05-协作与测试.md`](docs/05-协作与测试.md). The full suite runs before a release, for cross-cutting changes, and in CI — not for every small edit.
 - Automated tests only ever use `os.tmpdir()` data roots and **never touch real `data/`**.
 - Host code changes: toggle the "Task Manager" component off/on in the Plugins page, or restart the app.
 - Client code changes: refresh the page (the client bundle is hot-replaced by DSH HMR).
 - To keep development data inside the repo, point `dataRoot` in `$DSH_HOME/personal-task-workbench/settings.json` at the repo's `data/` (gitignored).
+- Typical loop: make the change → targeted tests → local `git commit` (do not push) → publish a batch with [`docs/04-发布与更新.md`](docs/04-发布与更新.md).
 
 ## Scope
 
@@ -139,7 +143,9 @@ node --test tests/*.test.mjs
 - Feature spec: [`docs/01-功能规格.md`](docs/01-功能规格.md)
 - Implementation architecture: [`docs/02-实现架构.md`](docs/02-实现架构.md)
 - Architecture diagram: [`docs/03-整体架构图.html`](docs/03-整体架构图.html) · [screenshot](docs/acceptance/架构图.png)
+- Collaboration & testing (agent onboarding, data-contract → test map, config layers, targeted-test rules): [`docs/05-协作与测试.md`](docs/05-协作与测试.md)
 - Release & update runbook (Chinese): [`docs/04-发布与更新.md`](docs/04-发布与更新.md)
+- Contribution rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## License
 

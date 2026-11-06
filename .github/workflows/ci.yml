@@ -5,9 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# 公开仓库：默认只读，防止工作流拿到多余写权限
+permissions:
+  contents: read
+
+# 同一分支的旧运行在新提交后自动取消，避免排队
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -17,11 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Syntax check
-        run: |
-          node --check lib/index.js
-          node --check lib/client.js
-      - name: Unit tests (temp data roots only)
-        run: node --test tests/*.test.mjs
+      - name: Verify (syntax + full test suite)
+        run: npm run verify
       - name: Pack check
         run: npm pack --dry-run

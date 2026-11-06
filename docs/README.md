@@ -3,12 +3,13 @@ title: 文档索引（V3.0）
 type: index
 status: active
 created: 2026-11-05
-updated: 2026-11-05
+updated: 2026-11-06
 ---
 
 # 文档索引 · V3.0
 
-> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）。
+> 当前状态：**V3.0 已实现、已安装、已真实 GUI 验收**（2026-11-05）；**2026-11-06 已开源到 GitHub，并发布 npm `0.3.0` + GitHub Release `v0.3.0`**。
+> 仓库：https://github.com/Zevin-Labs/personal-task-workbench · npm：`dsh-personal-task-workbench` · Release：v0.3.0（含 tgz）。
 > V3.0 变化：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）；新增独立复盘数据域——`ReviewService` 唯一写网关、`/ptw/api/reviews*` 路由、`ptw_review_list` / `ptw_review_get` 只读 AI 工具。
 > 数据真源：`data/任务清单/YYYY-MM.md`（任务，按月分片）+ `data/想法池/想法池.md`（想法，单文件长期保留）+ `data/复盘/{日,周,月}复盘.md`（复盘，三个单文件、不按月切）；默认数据根 `$DSH_HOME/personal-task-workbench/data`；均不进 Git。
 > 不扫描任何知识库或外部 Daily 系统，不导入旧数据。
@@ -49,7 +50,7 @@ updated: 2026-11-05
 
 > 界面验收截图（2026-11-05 真实 GUI）含个人工作区与任务数据，未随开源仓库发布。
 
-## 文档（4 份 + 本页）
+## 文档（5 份 + 本页）
 
 | 文档 | 内容 |
 |---|---|
@@ -57,6 +58,7 @@ updated: 2026-11-05
 | [02 实现架构](./02-实现架构.md) | 三个域的数据契约、插件双半、统一读写层、写入一致性、路由/工具、测试、安装 |
 | [03 整体架构图](./03-整体架构图.html) | 一页图：分层结构、功能地图、数据分片、写路径、边界（[截图](./acceptance/架构图.png)） |
 | [04 发布与更新](./04-发布与更新.md) | 改了代码后怎么发版：GitHub / npm / 市场的关系、完整命令、2FA 与 token、常见报错 |
+| [05 协作与测试](./05-协作与测试.md) | **新智能体上手路径、文件地图、数据契约→测试矩阵、定向测试纪律、配置分层、交接清单** |
 
 ## 已定决策（不再反复）
 
@@ -107,12 +109,15 @@ tests/                # 三个域的 core / service / routes / tools + settings 
 ```
 
 ```bash
-cd personal-task-workbench
-node --test tests/*.test.mjs     # 89 个用例，全部通过
-node --check lib/index.js && node --check lib/client.js
+npm run check          # 语法：node --check lib/index.js lib/client.js
+npm run test:task      # 任务域定向：core + service + routes（33）
+npm run test:idea      # 想法域定向：core + service + routes + tools（27）
+npm run test:review    # 复盘域定向：core + service + routes + tools（24）
+npm run test:cross     # wiring + settings + skills（5）
+npm test               # 全量 89（只在发版前 / 跨域改动 / CI 跑）
 ```
 
-**测试纪律**：自动化测试只用 `os.tmpdir()` 下的临时数据根，不碰真实 `data/`；真实数据操作前先备份。
+**测试纪律**：默认只跑定向测试；全量最多一次，只在发版前、跨域共享代码改动、数据结构变更或 CI 时跑（改动→测试矩阵与规则见 [05 协作与测试](./05-协作与测试.md)）。自动化测试只用 `os.tmpdir()` 下的临时数据根，不碰真实 `data/`；真实数据操作前先备份。
 
 ## 安装与跨机部署
 
@@ -165,5 +170,5 @@ dsh plugin --profile <profile> add github:Zevin-Labs/personal-task-workbench
 ## 下一步
 
 1. 日常使用，发现问题记下来（哪一步卡、哪里不顺手）。
-2. 按问题小步改：复盘块位置/密度、材料展开体验、周/月窗口口径、AI 读复盘的用法。
+2. 按问题小步改：改完只跑对应域的定向测试；本地提交，**攒一批再发版**（发版见 [04](./04-发布与更新.md)）。
 3. 稳定后再考虑：复盘历史 tab、复盘统计、想法 → 任务转化、看板视图、提醒、重复任务、跨月浏览——都**不在当前版本**。

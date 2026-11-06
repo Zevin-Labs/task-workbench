@@ -10,8 +10,9 @@
 
 ## 当前状态
 
+**2026-11-06 已开源到 GitHub**，并发布 npm [`dsh-personal-task-workbench@0.3.0`](https://www.npmjs.com/package/dsh-personal-task-workbench)（[GitHub Release v0.3.0](https://github.com/Zevin-Labs/personal-task-workbench/releases/tag/v0.3.0) 带 tgz）。
 **V3.0 已实现，并在 DSH desktop 上完成真实 GUI 点击 + AI 工具联调验收**（2026-11-05）。
-测试：`node --test tests/*.test.mjs` → 89 个用例全部通过。无运行时依赖，无构建步骤。
+测试：89 个用例；全量测试是发版/CI 门禁，日常改动只跑对应域的定向测试（见 [`docs/05-协作与测试.md`](docs/05-协作与测试.md)）。无运行时依赖，无构建步骤。
 > V3.0：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）+ 独立复盘数据域（`ReviewService`、`/ptw/api/reviews*`、`ptw_review_*` 只读工具）。
 > V2.0：想法池（独立单文件、四态、三档成熟度、多行描述、状态仅人改）。
 > 界面名称统一为「任务管理」。
@@ -103,7 +104,7 @@ lib/
 └── host/             # settings / writer / gateway / http / store / service / routes / tools（任务 / 想法 / 复盘各一套）
 skills/               # 随包统一技能 personal-task-workbench（AI 使用说明）
 tests/                # core / service / routes / tools / wiring / settings / skills，全部用临时数据根
-docs/                 # 功能规格 + 实现架构 + 架构图
+docs/                 # 功能规格 + 实现架构 + 架构图 + 协作与测试指南
 ```
 
 ## 开发
@@ -111,14 +112,17 @@ docs/                 # 功能规格 + 实现架构 + 架构图
 ```bash
 git clone https://github.com/Zevin-Labs/personal-task-workbench.git
 cd personal-task-workbench
-node --check lib/index.js && node --check lib/client.js
-node --test tests/*.test.mjs
+npm run check                      # 语法检查
+npm run test:task                  # 定向示例：任务域（33 个用例）
+npm test                           # 全量 89（只在发版前 / 跨域改动 / CI 跑）
 ```
 
+- **默认定向测试**：改哪个域就跑哪个域的测试文件；改动→测试矩阵见 [`docs/05-协作与测试.md`](docs/05-协作与测试.md)。全量测试只作为发版门禁、跨域改动和 CI 使用，不为小改动跑全量。
 - 自动化测试只用 `os.tmpdir()` 临时数据根，**不碰真实 `data/`**。
 - 改 host 代码：插件页把「任务管理」组件关/开一次，或重启 App。
 - 改 client 代码：刷新页面（client bundle 由 DSH HMR 热替换）。
 - 本地开发想沿用仓库内数据时，把 `$DSH_HOME/personal-task-workbench/settings.json` 的 `dataRoot` 指到仓库 `data/`（已 gitignore）。
+- 典型节奏：改代码 → 定向测试 → 本地 `git commit`（不 push）→ 攒一批按 [`docs/04-发布与更新.md`](docs/04-发布与更新.md) 发版。
 
 ## 边界
 
@@ -133,7 +137,9 @@ node --test tests/*.test.mjs
 - 功能规格：[`docs/01-功能规格.md`](docs/01-功能规格.md)
 - 实现架构：[`docs/02-实现架构.md`](docs/02-实现架构.md)
 - 整体架构图：[`docs/03-整体架构图.html`](docs/03-整体架构图.html) · [截图](docs/acceptance/架构图.png)
+- 协作与测试（智能体上手、数据契约→测试矩阵、配置分层、定向测试纪律）：[`docs/05-协作与测试.md`](docs/05-协作与测试.md)
 - 发布与更新：[`docs/04-发布与更新.md`](docs/04-发布与更新.md)
+- 贡献规则：[`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## License
 

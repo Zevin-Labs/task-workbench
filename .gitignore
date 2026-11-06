@@ -8,5 +8,10 @@ coverage/
 
 .playwright-mcp/
 
+# 本机凭据 / 环境变量：开源仓库绝不提交
+.env
+.env.*
+.npmrc
+
 # 打包产物（npm pack）
 *.tgz
