@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 async function loadPlugin() {
-  const home = await mkdtemp(join(tmpdir(), 'ptw-wiring-home-'))
+  const home = await mkdtemp(join(tmpdir(), 'twb-wiring-home-'))
   const previous = process.env.DSH_HOME
   process.env.DSH_HOME = home
   const mod = await import('../lib/index.js')
@@ -54,20 +54,20 @@ test('wiring: apply() 注册任务/想法/复盘三类工具 + 复盘路由，�
   const names = fake.tools.map((tool) => tool.name)
   // 任务 7 + 想法 5 + 复盘只读 2
   assert.equal(names.length, 14, `工具数量：${names.join(', ')}`)
-  assert.deepEqual(names.filter((name) => name.startsWith('ptw_review_')), ['ptw_review_list', 'ptw_review_get'])
-  for (const forbidden of ['ptw_review_create', 'ptw_review_update', 'ptw_review_delete', 'ptw_review_save']) {
+  assert.deepEqual(names.filter((name) => name.startsWith('tw_review_')), ['tw_review_list', 'tw_review_get'])
+  for (const forbidden of ['tw_review_create', 'tw_review_update', 'tw_review_delete', 'tw_review_save']) {
     assert.equal(names.includes(forbidden), false, `${forbidden} 不应注册`)
   }
   // 原有工具面不变
-  assert.deepEqual(names.filter((name) => name.startsWith('ptw_idea_')).sort(), [
-    'ptw_idea_create', 'ptw_idea_delete', 'ptw_idea_get', 'ptw_idea_list', 'ptw_idea_update',
+  assert.deepEqual(names.filter((name) => name.startsWith('tw_idea_')).sort(), [
+    'tw_idea_create', 'tw_idea_delete', 'tw_idea_get', 'tw_idea_list', 'tw_idea_update',
   ])
-  assert.equal(names.includes('ptw_create'), true)
-  assert.equal(names.includes('ptw_complete'), false)
+  assert.equal(names.includes('tw_create'), true)
+  assert.equal(names.includes('tw_complete'), false)
 
   assert.equal(fake.routes.length, 1)
   assert.equal(fake.routes[0].kind, 'prefix')
-  assert.equal(fake.routes[0].path, '/ptw')
+  assert.equal(fake.routes[0].path, '/tw')
   assert.equal(typeof fake.routes[0].handler, 'function')
 
   assert.equal(fake.providers.length, 1)
@@ -75,5 +75,5 @@ test('wiring: apply() 注册任务/想法/复盘三类工具 + 复盘路由，�
   const list = await provider.list()
   assert.equal(list[0].name, 'task-workbench')
   const content = await provider.get({ name: list[0].name, locator: list[0].locator })
-  assert.match(content.content, /ptw_review_list/)
+  assert.match(content.content, /tw_review_list/)
 })

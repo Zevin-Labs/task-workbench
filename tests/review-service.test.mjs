@@ -52,7 +52,7 @@ const MONTHLY_WEEKLY_FIXTURE = [
 ].join('\n')
 
 async function makeEnv({ now = '2026-11-05T10:00:00', initialized = true, fixtures = true } = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-review-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-review-'))
   let current = new Date(now)
   const nowFn = () => current
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized }

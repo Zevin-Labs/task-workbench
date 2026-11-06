@@ -15,11 +15,11 @@
 
 ## Status
 
-**Open-sourced on GitHub on 2026-11-06** and published to npm as [`dsh-task-workbench@0.4.0`](https://www.npmjs.com/package/dsh-task-workbench) ([GitHub Release v0.4.0](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0)).
+**Open-sourced on GitHub on 2026-11-06.** Current version: `0.5.0` — the repository/package were renamed from `personal-task-workbench` and the agent tools from `ptw_*` to `tw_*`. npm publication of `dsh-task-workbench@0.5.0` is pending.
 **V3.0 is implemented and accepted with real GUI clicks + agent tool integration on DSH desktop** (2026-11-05).
 Tests: 89 passing with no runtime dependencies and no build step. The full suite is a release/CI gate; day-to-day changes run only the targeted domain tests (see [`docs/05-协作与测试.md`](docs/05-协作与测试.md)).
 
-> V3.0 adds the review area at the bottom of the Today view (daily / weekly / monthly, human-written, agent-read-only) and a separate review domain (`ReviewService`, `/ptw/api/reviews*`, `ptw_review_*` read-only tools).
+> V3.0 adds the review area at the bottom of the Today view (daily / weekly / monthly, human-written, agent-read-only) and a separate review domain (`ReviewService`, `/tw/api/reviews*`, `tw_review_*` read-only tools).
 > V2.0 added the idea pool (single file, four states, three maturity levels, multi-line descriptions, human-only state changes).
 > The UI is currently Chinese-only; the plugin, its files and this README are language-agnostic.
 
@@ -42,10 +42,10 @@ dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
 ```
 
 **From the release tarball** (prebuilt; no build approval needed): download
-`dsh-task-workbench-0.4.0.tgz` from the [v0.4.0 release](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0), then:
+`dsh-task-workbench-0.5.0.tgz` from the [v0.5.0 release](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.5.0), then:
 
 ```sh
-dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.4.0.tgz
+dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.5.0.tgz
 ```
 
 **From a local checkout:**
@@ -71,7 +71,7 @@ Then open **Task Workbench** in the sidebar. The first open walks you through in
    - **Monthly** — appears on the **last day of the month** (28/29/30/31 as applicable) and covers the month; it can still be written on the 1st–3rd of the next month, with the month's task summary and weekly reviews as material.
    - Reviews outside their writable window are read-only (edit the Markdown directly for history); all three can be edited in place and cleared (second confirmation + backup before writing).
 8. **Edit / delete / complete** — inline task operations; multi-day and single-day can be converted into each other; delete is a hard delete (second confirmation + automatic backup before writing). Idea edit/delete is in a modal; state changes happen on the card pill or in the modal.
-9. **Agents** can read tasks, create/edit/delete tasks (`ptw_*`), read ideas, create/edit idea content and delete ideas (`ptw_idea_*`), and **read** reviews (`ptw_review_list` / `ptw_review_get`). **Completing/uncompleting tasks, changing idea states and writing review prose are human-only** — no agent write tool exists. The plugin ships a `task-workbench` skill that tells the agent which tools to use.
+9. **Agents** can read tasks, create/edit/delete tasks (`tw_*`), read ideas, create/edit idea content and delete ideas (`tw_idea_*`), and **read** reviews (`tw_review_list` / `tw_review_get`). **Completing/uncompleting tasks, changing idea states and writing review prose are human-only** — no agent write tool exists. The plugin ships a `task-workbench` skill that tells the agent which tools to use.
 
 ## Data layout
 
@@ -95,7 +95,7 @@ data root (default $DSH_HOME/task-workbench/data)
 
 ## Privacy and permission boundary
 
-- **No external network requests**: the plugin only talks to its own same-origin local API (`/ptw/api`) and reads/writes local Markdown with `node:fs` inside the Host process.
+- **No external network requests**: the plugin only talks to its own same-origin local API (`/tw/api`) and reads/writes local Markdown with `node:fs` inside the Host process.
 - Data stays in the local data root and `$DSH_HOME/task-workbench/`, never inside the plugin install directory, so upgrades and reinstalls cannot lose it.
 - Agents and the UI share the same service, write gateway, queue, backup and audit log (`writes.log`) — there is no second write path.
 - **Completing/uncompleting tasks, changing idea states and writing reviews are human-only**: there is no agent tool for them, and the service layer returns `permission-denied` for non-user actors.

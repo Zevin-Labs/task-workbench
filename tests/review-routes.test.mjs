@@ -11,7 +11,7 @@ import { ReviewService } from '../lib/host/review-service.js'
 import { createRoutes } from '../lib/host/routes.js'
 
 async function makeServer() {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-review-route-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-review-route-'))
   const now = () => new Date('2026-11-05T10:00:00')
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
   const store = new TaskStore({ settings, persistSettings: () => {}, now })
@@ -22,7 +22,7 @@ async function makeServer() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
   return {
-    base: `http://127.0.0.1:${port}/ptw/api`,
+    base: `http://127.0.0.1:${port}/tw/api`,
     reviewService,
     async close() {
       await new Promise((resolve) => server.close(resolve))

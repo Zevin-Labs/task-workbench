@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 
 // settings.js 在每次调用时读 process.env.DSH_HOME，所以测试必须先设好环境再调用。
 async function withDshHome(fn) {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-settings-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-settings-'))
   const previous = process.env.DSH_HOME
   process.env.DSH_HOME = root
   try {

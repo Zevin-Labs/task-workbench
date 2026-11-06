@@ -8,7 +8,7 @@ import { TaskService, toolActor, userActor } from '../lib/host/service.js'
 import { parseShard } from '../lib/core/grammar.js'
 
 async function makeEnv({ now = '2026-11-05T10:00:00' } = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-test-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-test-'))
   let current = new Date(now)
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: false }
   const store = new TaskStore({

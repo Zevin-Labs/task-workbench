@@ -10,7 +10,7 @@ import { createRoutes } from '../lib/host/routes.js'
 import { createTools } from '../lib/host/tools.js'
 
 async function makeServer() {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-route-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-route-'))
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: false }
   const store = new TaskStore({ settings, persistSettings: (next) => { settings.initialized = next.initialized === true } })
   const service = new TaskService({ store, stateDir: join(root, 'state') })
@@ -18,7 +18,7 @@ async function makeServer() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
   return {
-    base: `http://127.0.0.1:${port}/ptw/api`,
+    base: `http://127.0.0.1:${port}/tw/api`,
     service,
     async close() {
       await new Promise((resolve) => server.close(resolve))
@@ -98,17 +98,17 @@ test('routes: 结构化错误与同源校验', async (t) => {
   assert.equal(cross.status, 403)
 })
 
-test('tools: 注册 7 个 ptw_* 工具，无完成工具；工具写入走同一 service', async (t) => {
+test('tools: 注册 7 个 tw_* 工具，无完成工具；工具写入走同一 service', async (t) => {
   const env = await makeServer()
   t.after(() => env.close())
   await call(env.base, 'POST', '/init', {})
   const tools = createTools(env.service)
   const names = tools.map((tool) => tool.name).sort()
-  assert.deepEqual(names, ['ptw_create', 'ptw_delete', 'ptw_get_task', 'ptw_list', 'ptw_today', 'ptw_update', 'ptw_week'])
+  assert.deepEqual(names, ['tw_create', 'tw_delete', 'tw_get_task', 'tw_list', 'tw_today', 'tw_update', 'tw_week'])
   assert.equal(names.some((name) => /complete|reopen/.test(name)), false)
 
   const exec = { agent: { session: { id: 'session-tools' } } }
-  const create = tools.find((tool) => tool.name === 'ptw_create')
+  const create = tools.find((tool) => tool.name === 'tw_create')
   const created = await create.execute({ title: 'AI 建任务', date: '2026-11-05', time: '14:00', endDate: '2026-11-07', priority: '重要紧急' }, exec)
   assert.equal(created.ok, true)
   assert.match(created.message, /已创建任务/)
@@ -117,27 +117,27 @@ test('tools: 注册 7 个 ptw_* 工具，无完成工具；工具写入走同一
   assert.equal(created.data.task.time, '14:00')
   assert.equal(created.data.task.endDate, '2026-11-07')
 
-  const today = tools.find((tool) => tool.name === 'ptw_today')
+  const today = tools.find((tool) => tool.name === 'tw_today')
   const view = await today.execute({}, exec)
   assert.equal(view.ok, true)
   assert.match(view.message, /AI 建任务/)
   assert.equal(view.data.open.length, 1)
   assert.equal(view.data.overdue.length, 0)
 
-  const week = tools.find((tool) => tool.name === 'ptw_week')
+  const week = tools.find((tool) => tool.name === 'tw_week')
   const weekView = await week.execute({ anchor: '2026-11-06' }, exec)
   assert.equal(weekView.ok, true)
   assert.ok(weekView.data.spans.some((span) => span.title === 'AI 建任务'))
 
-  const update = tools.find((tool) => tool.name === 'ptw_update')
+  const update = tools.find((tool) => tool.name === 'tw_update')
   const updated = await update.execute({ taskId: created.data.task.id, note: 'AI 改的', endDate: '', endTime: '', time: '' }, exec)
   assert.equal(updated.data.task.note, 'AI 改的')
   assert.equal(updated.data.task.type, 'single')
 
-  const remove = tools.find((tool) => tool.name === 'ptw_delete')
+  const remove = tools.find((tool) => tool.name === 'tw_delete')
   const removed = await remove.execute({ taskId: created.data.task.id }, exec)
   assert.equal(removed.ok, true)
-  const list = tools.find((tool) => tool.name === 'ptw_list')
+  const list = tools.find((tool) => tool.name === 'tw_list')
   const listed = await list.execute({ includeCompleted: true }, exec)
   assert.equal(listed.data.tasks.length, 0)
 })

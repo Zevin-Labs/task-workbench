@@ -9,7 +9,7 @@ import { createIdeaTools } from '../lib/host/idea-tools.js'
 import { toolActor } from '../lib/host/service.js'
 
 async function makeEnv() {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-idea-tool-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-idea-tool-'))
   const now = () => new Date('2026-11-05T10:00:00')
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
   const store = new IdeaStore({ settings, persistSettings: () => {}, now, isDataRootReady: () => true })
@@ -19,18 +19,18 @@ async function makeEnv() {
 
 const exec = { agent: { session: { id: 'session-idea-tools' } } }
 
-test('idea-tools: 注册 5 个 ptw_idea_* 工具，没有改状态工具', async (t) => {
+test('idea-tools: 注册 5 个 tw_idea_* 工具，没有改状态工具', async (t) => {
   const env = await makeEnv()
   t.after(env.cleanup)
   const tools = createIdeaTools(env.service)
   assert.deepEqual(tools.map((tool) => tool.name).sort(), [
-    'ptw_idea_create', 'ptw_idea_delete', 'ptw_idea_get', 'ptw_idea_list', 'ptw_idea_update',
+    'tw_idea_create', 'tw_idea_delete', 'tw_idea_get', 'tw_idea_list', 'tw_idea_update',
   ])
   const names = tools.map((tool) => tool.name)
   assert.equal(names.some((name) => /status|complete/.test(name)), false)
-  const update = tools.find((tool) => tool.name === 'ptw_idea_update')
+  const update = tools.find((tool) => tool.name === 'tw_idea_update')
   assert.equal(Object.prototype.hasOwnProperty.call(update.parameters.properties, 'status'), false)
-  const create = tools.find((tool) => tool.name === 'ptw_idea_create')
+  const create = tools.find((tool) => tool.name === 'tw_idea_create')
   assert.equal(Object.prototype.hasOwnProperty.call(create.parameters.properties, 'status'), false)
 })
 
@@ -40,7 +40,7 @@ test('idea-tools: AI 新建 / 列表 / 详情 / 编辑 / 删除走同一 service
   const tools = createIdeaTools(env.service)
   const tool = (name) => tools.find((item) => item.name === name)
 
-  const created = await tool('ptw_idea_create').execute({
+  const created = await tool('tw_idea_create').execute({
     name: 'AI 记的想法',
     description: '第一段\n第二段',
     maturity: '高',
@@ -55,17 +55,17 @@ test('idea-tools: AI 新建 / 列表 / 详情 / 编辑 / 删除走同一 service
   assert.ok(text.includes('AI 记的想法'))
   assert.ok(text.includes('  第一段\n  第二段'))
 
-  const list = await tool('ptw_idea_list').execute({ status: '待实现' }, exec)
+  const list = await tool('tw_idea_list').execute({ status: '待实现' }, exec)
   assert.equal(list.data.ideas.length, 1)
   assert.match(list.message, /AI 记的想法/)
-  const filtered = await tool('ptw_idea_list').execute({ status: '完成' }, exec)
+  const filtered = await tool('tw_idea_list').execute({ status: '完成' }, exec)
   assert.equal(filtered.data.ideas.length, 0)
 
-  const got = await tool('ptw_idea_get').execute({ ideaId: created.data.idea.id }, exec)
+  const got = await tool('tw_idea_get').execute({ ideaId: created.data.idea.id }, exec)
   assert.equal(got.data.idea.name, 'AI 记的想法')
   assert.match(got.message, /第一段/)
 
-  const updated = await tool('ptw_idea_update').execute({
+  const updated = await tool('tw_idea_update').execute({
     ideaId: created.data.idea.id,
     name: 'AI 改过的想法',
     maturity: '中',
@@ -75,9 +75,9 @@ test('idea-tools: AI 新建 / 列表 / 详情 / 编辑 / 删除走同一 service
   assert.equal(updated.data.idea.maturity, '中')
   assert.equal(updated.data.idea.category, '')
 
-  const removed = await tool('ptw_idea_delete').execute({ ideaId: created.data.idea.id }, exec)
+  const removed = await tool('tw_idea_delete').execute({ ideaId: created.data.idea.id }, exec)
   assert.equal(removed.ok, true)
-  const empty = await tool('ptw_idea_list').execute({}, exec)
+  const empty = await tool('tw_idea_list').execute({}, exec)
   assert.equal(empty.data.ideas.length, 0)
 })
 

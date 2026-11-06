@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-workbench",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Local-first task workbench for DeepSeek Harness: today/week/all-task views, single-day and multi-day tasks with optional times, an idea pool, and daily/weekly/monthly reviews that agents can read but never write. · 任务工作台 + 想法池 + 复盘（日/周/月），人与 AI 共用同一套写网关。",
   "type": "module",
   "main": "lib/index.js",

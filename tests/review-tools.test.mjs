@@ -18,7 +18,7 @@ const DAILY_FILE = [
 ].join('\n')
 
 async function makeService() {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-review-tool-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-review-tool-'))
   const now = () => new Date('2026-11-05T10:00:00')
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
   const taskStore = new TaskStore({ settings, persistSettings: () => {}, now })
@@ -34,8 +34,8 @@ test('review-tools: 只有只读工具（list / get），没有写工具', async
   const env = await makeService()
   t.after(env.cleanup)
   const tools = createReviewTools(env.service)
-  assert.deepEqual(tools.map((tool) => tool.name), ['ptw_review_list', 'ptw_review_get'])
-  for (const name of ['ptw_review_create', 'ptw_review_update', 'ptw_review_delete', 'ptw_review_save']) {
+  assert.deepEqual(tools.map((tool) => tool.name), ['tw_review_list', 'tw_review_get'])
+  for (const name of ['tw_review_create', 'tw_review_update', 'tw_review_delete', 'tw_review_save']) {
     assert.equal(tools.some((tool) => tool.name === name), false, `${name} 不应存在`)
   }
   for (const tool of tools) {

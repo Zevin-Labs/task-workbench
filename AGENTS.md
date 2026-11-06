@@ -4,7 +4,7 @@
 
 ## 项目
 
-**任务工作台**（项目目录/包名： `task-workbench` / `dsh-task-workbench`）：DeepSeek Harness 插件 + 侧栏入口的轻量任务工作台 + 想法池 + 复盘。当前阶段：**V3.0 已实现、已验收**；2026-11-06 已开源到 GitHub（`Zevin-Labs/task-workbench`）并发布 npm `0.4.0`；进入日常试用与小步修正。任务：登记 + 今日/本周查看 + 创建/编辑/删除/完成，分**当天 / 跨周期**，日期可带可选时间。想法池：捕获 + 四态 + 三档成熟度 + 多行详细描述。复盘：日 / 周 / 月，到点提示 + 人写 + 窗口内可改，AI 只读。
+**任务工作台**（项目目录/包名： `task-workbench` / `dsh-task-workbench`）：DeepSeek Harness 插件 + 侧栏入口的轻量任务工作台 + 想法池 + 复盘。当前阶段：**V3.0 已实现、已验收**；2026-11-06 已开源到 GitHub（`Zevin-Labs/task-workbench`）当前版本 npm `0.5.0`（待发布）；进入日常试用与小步修正。任务：登记 + 今日/本周查看 + 创建/编辑/删除/完成，分**当天 / 跨周期**，日期可带可选时间。想法池：捕获 + 四态 + 三档成熟度 + 多行详细描述。复盘：日 / 周 / 月，到点提示 + 人写 + 窗口内可改，AI 只读。
 
 ## 必读
 
@@ -17,7 +17,7 @@
 
 1. **只做任务工作台 + 想法池 + 复盘**：任务做今日/本周/任务总表、查看、创建、编辑、删除、完成/撤销、当天与跨周期（连续开始→结束区间）、可选 `HH:mm`；想法做列表/筛选/搜索、新建、编辑内容、改状态、删除、四态（待实现/推进中/完成/放弃）、三档成熟度、多行描述；复盘做日/周/月三类、窗口内提交/编辑/清空、周/月内联材料、AI 只读。不扫描知识库、不生成 Daily、不做固定动作/项目方向/周期任务（重复规则）/农历/提醒推送/迁移导入；**不做想法→任务转化、想法看板、自动归档**；**不做复盘历史 tab、复盘统计、AI 写复盘、补写更早周期**。
 2. **数据真源 = 工作台自有数据目录**（默认 `$DSH_HOME/task-workbench/data`，可由 `settings.json` 的 `dataRoot` 覆盖；本地开发可指向仓库内 `data/`，已 gitignore）：任务 `data/任务清单/YYYY-MM.md` 按月分片；想法 `data/想法池/想法池.md` 单文件不按月切；复盘 `data/复盘/日复盘.md`、`周复盘.md`、`月复盘.md` 三个单文件不按月切。数据根与安装形态解耦：换机、升级插件都不写进 `node_modules` 副本。不读写、不依赖任何外部笔记/Daily 系统。
-3. **AI 权限边界**：AI 走统一层——任务 `TaskService`（`ptw_*`）、想法 `IdeaService`（`ptw_idea_*`）、复盘 `ReviewService`（`ptw_review_list` / `ptw_review_get` 只读），写入均带 actor 审计；**任务完成/撤销完成仅人**，**想法状态流转仅人**，**复盘正文仅人写**（没有对应写工具，越权返回 `permission-denied`）；失败不假装成功。随包技能 `task-workbench` 只是工具使用说明，不是第二条写路径。
+3. **AI 权限边界**：AI 走统一层——任务 `TaskService`（`tw_*`）、想法 `IdeaService`（`tw_idea_*`）、复盘 `ReviewService`（`tw_review_list` / `tw_review_get` 只读），写入均带 actor 审计；**任务完成/撤销完成仅人**，**想法状态流转仅人**，**复盘正文仅人写**（没有对应写工具，越权返回 `permission-denied`）；失败不假装成功。随包技能 `task-workbench` 只是工具使用说明，不是第二条写路径。
 4. **文档极简**：`docs/` 只保留 README + 01 功能规格 + 02 实现架构 + 03 架构图 + 04 发布与更新 + 05 协作与测试 + `acceptance/` 架构图；过期文档直接删除，不再恢复编号堆叠。
 5. **客户端形态**：原生 React（`lib/client.js` 手写 lazy-CJS，无构建步骤），不用 iframe；不 import 任何 `@deepseek-ai/dsh-client-*` 包；样式只用 `--dsw-alias-*` / `--dsw-elevation-*` token。
 6. **Host 写文件用 `node:fs`**（持久插件在 Host 进程内），不用 `ctx.fs`；唯一写网关是 `TaskService` / `IdeaService` / `ReviewService`（三个域各一个，共用 `WriteGateway` 的队列/幂等/审计），UI 与 AI 都不许另开写路径。
@@ -28,6 +28,7 @@
 ## 工作方式
 
 - **Git**：有改动默认 `git commit` 到本地本仓；**不执行 `git push`**（推送由仓库所有者统一做）。提交信息写清改了什么。
+- **命名先行**：新插件动工前先定死插件名、包名、AI 工具前缀、API 路径前缀、CSS 类前缀；工具统一 `<prefix>_<verb>`（本仓 `tw_*`），API 统一 `/<prefix>/`（本仓 `/tw/`），CSS 统一 `<prefix>-`（本仓 `twb-`，带插件特征避免与其他插件撞类）。改名时一次性全量替换代码、工具、API、CSS、文档、测试与数据目录，不留两套名字。
 - 任务/想法/复盘数据放数据根（默认 `$DSH_HOME/task-workbench/data`，已 gitignore），不要提交进 Git；插件状态在 `$DSH_HOME/task-workbench/`。
 - 临时产物（浏览器日志、截图 probe、mock 稿）放 `test-tmp/` 或 `.playwright-mcp/`（均已 gitignore），交付前清掉，不留在仓库根目录。
 - 改 host 代码后：插件页把组件关/开一次触发重载，或重启 App；改 client 代码后刷新页面（DSH HMR）。

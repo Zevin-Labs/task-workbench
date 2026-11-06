@@ -323,12 +323,12 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
             <div class="node">
               <div class="nm">工具注册</div>
               <div class="cd">ctx.tools</div>
-              <div class="ds">把 ptw_* 暴露给模型</div>
+              <div class="ds">把 tw_* 暴露给模型</div>
             </div>
             <div class="node">
               <div class="nm">HTTP 路由</div>
               <div class="cd">ctx.webServer</div>
-              <div class="ds">/ptw/api/*；同源、仅本机</div>
+              <div class="ds">/tw/api/*；同源、仅本机</div>
             </div>
             <div class="node">
               <div class="nm">状态目录</div>
@@ -370,7 +370,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
         </div>
       </div>
 
-      <div class="link"><span class="lbl"><i>↕</i> 同源 HTTP <code>/ptw/api/*</code>（JSON；UI 5s 轮询外部改动）· UI 的唯一读写通道</span></div>
+      <div class="link"><span class="lbl"><i>↕</i> 同源 HTTP <code>/tw/api/*</code>（JSON；UI 5s 轮询外部改动）· UI 的唯一读写通道</span></div>
 
       <!-- L3 -->
       <div class="layer layer-core">
@@ -392,7 +392,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
         </div>
       </div>
 
-      <div class="link"><span class="lbl"><i>↑</i> AI 经 <code>ptw_*</code> 工具进入同一 TaskService：同一权限 / 队列 / 锁 / 备份 / 审计</span></div>
+      <div class="link"><span class="lbl"><i>↑</i> AI 经 <code>tw_*</code> 工具进入同一 TaskService：同一权限 / 队列 / 锁 / 备份 / 审计</span></div>
 
       <!-- L4 -->
       <div class="layer layer-ai">
@@ -406,26 +406,26 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
             <div class="ai-box">
               <h4><span>读工具</span><span class="ai-k">Read</span></h4>
               <div class="tools">
-                <span class="tool">ptw_today</span>
-                <span class="tool">ptw_week</span>
-                <span class="tool">ptw_list</span>
-                <span class="tool">ptw_get_task</span>
-                <span class="tool">ptw_idea_list</span>
-                <span class="tool">ptw_idea_get</span>
-                <span class="tool">ptw_review_list</span>
-                <span class="tool">ptw_review_get</span>
+                <span class="tool">tw_today</span>
+                <span class="tool">tw_week</span>
+                <span class="tool">tw_list</span>
+                <span class="tool">tw_get_task</span>
+                <span class="tool">tw_idea_list</span>
+                <span class="tool">tw_idea_get</span>
+                <span class="tool">tw_review_list</span>
+                <span class="tool">tw_review_get</span>
               </div>
               <p>读今日 / 本周 / 任务列表 / 详情、想法列表 / 详情，以及复盘列表 / 单条正文。</p>
             </div>
             <div class="ai-box">
               <h4><span>写工具</span><span class="ai-k">Write</span></h4>
               <div class="tools">
-                <span class="tool">ptw_create</span>
-                <span class="tool">ptw_update</span>
-                <span class="tool">ptw_delete</span>
-                <span class="tool">ptw_idea_create</span>
-                <span class="tool">ptw_idea_update</span>
-                <span class="tool">ptw_idea_delete</span>
+                <span class="tool">tw_create</span>
+                <span class="tool">tw_update</span>
+                <span class="tool">tw_delete</span>
+                <span class="tool">tw_idea_create</span>
+                <span class="tool">tw_idea_update</span>
+                <span class="tool">tw_idea_delete</span>
               </div>
               <p>创建 / 编辑 / 删除任务与想法内容；分别经 TaskService / IdeaService，带 actor 审计。<br><b>复盘没有任何写工具</b>（只读）。</p>
             </div>
@@ -586,7 +586,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
           <li><b>月复盘</b>当月<b>最后一天</b>（28/29/30/31 按实际）出现，复盘本月；次月 1–3 日可补写；材料 = 本月任务概况 + 本月周复盘</li>
           <li><b>可写窗口</b>日=今天 / 周=本周 / 月=月末→次月 3 日；服务端强制，窗口外只读</li>
           <li><b>存储</b><code>data/复盘/日复盘.md</code>、<code>周复盘.md</code>、<code>月复盘.md</code> 三个单文件、不按月切；无 ID（周期键唯一）；写前备份</li>
-          <li><b>AI</b><b>只读</b>：<code>ptw_review_list</code> / <code>ptw_review_get</code>；没有写工具，正文只能由人写</li>
+          <li><b>AI</b><b>只读</b>：<code>tw_review_list</code> / <code>tw_review_get</code>；没有写工具，正文只能由人写</li>
         </ul>
       </article>
 
@@ -615,11 +615,11 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
         </header>
         <p class="fc-lede">AI 是受限写入者：能读、能建改删任务与想法内容，但不能替人完成或改想法状态。</p>
         <ul class="fc-list">
-          <li><b>任务读 4 工具</b><code>ptw_today</code> / <code>ptw_week</code> / <code>ptw_list</code> / <code>ptw_get_task</code></li>
-          <li><b>任务写 3 工具</b><code>ptw_create</code> / <code>ptw_update</code> / <code>ptw_delete</code></li>
-          <li><b>想法读 2 工具</b><code>ptw_idea_list</code> / <code>ptw_idea_get</code></li>
-          <li><b>想法写 3 工具</b><code>ptw_idea_create</code> / <code>ptw_idea_update</code> / <code>ptw_idea_delete</code></li>
-          <li><b>复盘只读 2 工具</b><code>ptw_review_list</code> / <code>ptw_review_get</code>（没有写工具）</li>
+          <li><b>任务读 4 工具</b><code>tw_today</code> / <code>tw_week</code> / <code>tw_list</code> / <code>tw_get_task</code></li>
+          <li><b>任务写 3 工具</b><code>tw_create</code> / <code>tw_update</code> / <code>tw_delete</code></li>
+          <li><b>想法读 2 工具</b><code>tw_idea_list</code> / <code>tw_idea_get</code></li>
+          <li><b>想法写 3 工具</b><code>tw_idea_create</code> / <code>tw_idea_update</code> / <code>tw_idea_delete</code></li>
+          <li><b>复盘只读 2 工具</b><code>tw_review_list</code> / <code>tw_review_get</code>（没有写工具）</li>
           <li><b>人工闸门</b>任务完成 / 撤销、想法改状态、复盘正文都只能由人；AI 没有对应工具，越权返回 <code>permission-denied</code></li>
           <li><b>审计</b>每次 AI 写记 actor / 工具 / 前后值 / 时间</li>
         </ul>
@@ -720,7 +720,7 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
     <div class="entry-grid">
       <div class="entry">
         <div class="en-k">入口 A · 工作台 UI</div>
-        <div class="en-d">client 半 · 同源请求 <code>/ptw/api/*</code> · 用户直接操作</div>
+        <div class="en-d">client 半 · 同源请求 <code>/tw/api/*</code> · 用户直接操作</div>
         <div class="en-list">
           <span class="en-chip">查看</span>
           <span class="en-chip">创建</span>
@@ -733,16 +733,16 @@ h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
       </div>
       <div class="entry ai">
         <div class="en-k">入口 B · AI 智能体</div>
-        <div class="en-d">模型侧 · <code>ptw_*</code> / <code>ptw_idea_*</code> / <code>ptw_review_*</code> 工具 · 读 + 创建 / 编辑 / 删除（复盘只读）</div>
+        <div class="en-d">模型侧 · <code>tw_*</code> / <code>tw_idea_*</code> / <code>tw_review_*</code> 工具 · 读 + 创建 / 编辑 / 删除（复盘只读）</div>
         <div class="en-list">
-          <span class="en-chip">ptw_create</span>
-          <span class="en-chip">ptw_update</span>
-          <span class="en-chip">ptw_delete</span>
-          <span class="en-chip">ptw_idea_create</span>
-          <span class="en-chip">ptw_idea_update</span>
-          <span class="en-chip">ptw_idea_delete</span>
-          <span class="en-chip">ptw_review_list</span>
-          <span class="en-chip">ptw_review_get</span>
+          <span class="en-chip">tw_create</span>
+          <span class="en-chip">tw_update</span>
+          <span class="en-chip">tw_delete</span>
+          <span class="en-chip">tw_idea_create</span>
+          <span class="en-chip">tw_idea_update</span>
+          <span class="en-chip">tw_idea_delete</span>
+          <span class="en-chip">tw_review_list</span>
+          <span class="en-chip">tw_review_get</span>
         </div>
       </div>
     </div>

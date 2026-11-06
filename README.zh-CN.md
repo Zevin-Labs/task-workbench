@@ -10,10 +10,10 @@
 
 ## 当前状态
 
-**2026-11-06 已开源到 GitHub**，并发布 npm [`dsh-task-workbench@0.4.0`](https://www.npmjs.com/package/dsh-task-workbench)（[GitHub Release v0.4.0](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0) 带 tgz）。
+**2026-11-06 已开源到 GitHub。** 当前版本 `0.5.0`：仓库/包名从 `personal-task-workbench` 改为 `task-workbench`，AI 工具前缀从 `ptw_*` 改为 `tw_*`；`dsh-task-workbench@0.5.0` 的 npm 发布待执行。
 **V3.0 已实现，并在 DSH desktop 上完成真实 GUI 点击 + AI 工具联调验收**（2026-11-05）。
 测试：89 个用例；全量测试是发版/CI 门禁，日常改动只跑对应域的定向测试（见 [`docs/05-协作与测试.md`](docs/05-协作与测试.md)）。无运行时依赖，无构建步骤。
-> V3.0：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）+ 独立复盘数据域（`ReviewService`、`/ptw/api/reviews*`、`ptw_review_*` 只读工具）。
+> V3.0：今日页底部新增**复盘区**（日 / 周 / 月，人写、AI 只读）+ 独立复盘数据域（`ReviewService`、`/tw/api/reviews*`、`tw_review_*` 只读工具）。
 > V2.0：想法池（独立单文件、四态、三档成熟度、多行描述、状态仅人改）。
 > 界面名称统一为「任务工作台」。
 
@@ -35,10 +35,10 @@ dsh plugin --profile <profile> add dsh-task-workbench
 dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
 ```
 
-**从 Release tarball**（预构建，无需构建授权）：从 [v0.4.0 Release](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.4.0) 下载 `dsh-task-workbench-0.4.0.tgz`，然后：
+**从 Release tarball**（预构建，无需构建授权）：从 [v0.5.0 Release](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.5.0) 下载 `dsh-task-workbench-0.5.0.tgz`，然后：
 
 ```sh
-dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.4.0.tgz
+dsh plugin --profile <profile> add /path/to/dsh-task-workbench-0.5.0.tgz
 ```
 
 **从源码 / 本地目录**：
@@ -65,7 +65,7 @@ dsh plugin --profile <profile> add /absolute/path/to/task-workbench
    - **月复盘**：**当月最后一天**（28/29/30/31 按实际）出现，复盘本月；次月 1–3 日仍可补写；材料含本月任务概况与本月周复盘。
    - 过了可写窗口的复盘只读（历史内容在 Markdown 里改）；三类都可原地编辑、可清空（二次确认 + 写前备份）。
 9. 编辑 / 删除 / 完成：任务行内操作，跨周期与当天可互转；删除为硬删除（二次确认 + 写前自动备份）。想法编辑/删除在弹窗内，改状态在卡片 pill 或编辑弹窗。
-10. AI 在会话里可直接读任务、创建/编辑/删除任务（`ptw_*`），读想法、新建/编辑内容/删除想法（`ptw_idea_*`），**只读**复盘（`ptw_review_list` / `ptw_review_get`）；**任务完成/撤销、想法状态、复盘正文都只能由人**（AI 没有对应写工具）。插件同时提供 `task-workbench` 技能，告诉 AI 该走哪些工具。
+10. AI 在会话里可直接读任务、创建/编辑/删除任务（`tw_*`），读想法、新建/编辑内容/删除想法（`tw_idea_*`），**只读**复盘（`tw_review_list` / `tw_review_get`）；**任务完成/撤销、想法状态、复盘正文都只能由人**（AI 没有对应写工具）。插件同时提供 `task-workbench` 技能，告诉 AI 该走哪些工具。
 
 ## 数据目录
 
@@ -88,7 +88,7 @@ dsh plugin --profile <profile> add /absolute/path/to/task-workbench
 
 ## 隐私与权限边界
 
-- **无外部网络请求**：插件只访问自己的同源本机 API（`/ptw/api`），并用 `node:fs` 在 Host 进程内读写本地 Markdown。
+- **无外部网络请求**：插件只访问自己的同源本机 API（`/tw/api`），并用 `node:fs` 在 Host 进程内读写本地 Markdown。
 - 数据只落在本机数据根与 `$DSH_HOME/task-workbench/`，不写进插件安装目录，升级/重装不丢。
 - AI 与 UI 共用同一套 service / 写网关 / 队列 / 备份 / 审计（`writes.log`），没有第二条写路径。
 - **完成/撤销任务、改想法状态、写复盘正文只能由人**：AI 没有对应写工具，service 层对非 user actor 返回 `permission-denied`。

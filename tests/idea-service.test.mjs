@@ -9,7 +9,7 @@ import { toolActor, userActor } from '../lib/host/service.js'
 import { parseIdeaPool } from '../lib/core/idea-grammar.js'
 
 async function makeEnv({ now = '2026-11-05T10:00:00', initialized = true } = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'ptw-idea-'))
+  const root = await mkdtemp(join(tmpdir(), 'twb-idea-'))
   let current = new Date(now)
   const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized }
   const store = new IdeaStore({
