@@ -17,7 +17,7 @@
 1. **只做任务管理 + 想法池 + 复盘**：任务做今日/本周/任务总表、查看、创建、编辑、删除、完成/撤销、当天与跨周期（连续开始→结束区间）、可选 `HH:mm`；想法做列表/筛选/搜索、新建、编辑内容、改状态、删除、四态（待实现/推进中/完成/放弃）、三档成熟度、多行描述；复盘做日/周/月三类、窗口内提交/编辑/清空、周/月内联材料、AI 只读。不扫描知识库、不生成 Daily、不做固定动作/项目方向/周期任务（重复规则）/农历/提醒推送/迁移导入；**不做想法→任务转化、想法看板、自动归档**；**不做复盘历史 tab、复盘统计、AI 写复盘、补写更早周期**。
 2. **数据真源 = 工作台自有数据目录**（默认 `$DSH_HOME/personal-task-workbench/data`，可由 `settings.json` 的 `dataRoot` 覆盖；本地开发可指向仓库内 `data/`，已 gitignore）：任务 `data/任务清单/YYYY-MM.md` 按月分片；想法 `data/想法池/想法池.md` 单文件不按月切；复盘 `data/复盘/日复盘.md`、`周复盘.md`、`月复盘.md` 三个单文件不按月切。数据根与安装形态解耦：换机、升级插件都不写进 `node_modules` 副本。不读写、不依赖任何外部笔记/Daily 系统。
 3. **AI 权限边界**：AI 走统一层——任务 `TaskService`（`ptw_*`）、想法 `IdeaService`（`ptw_idea_*`）、复盘 `ReviewService`（`ptw_review_list` / `ptw_review_get` 只读），写入均带 actor 审计；**任务完成/撤销完成仅人**，**想法状态流转仅人**，**复盘正文仅人写**（没有对应写工具，越权返回 `permission-denied`）；失败不假装成功。随包技能 `personal-task-workbench` 只是工具使用说明，不是第二条写路径。
-4. **文档极简**：`docs/` 只保留 README + 01 功能规格 + 02 实现架构 + 03 架构图 + `acceptance/` 架构图；过期文档直接删除，不再恢复编号堆叠。
+4. **文档极简**：`docs/` 只保留 README + 01 功能规格 + 02 实现架构 + 03 架构图 + 04 发布与更新 + `acceptance/` 架构图；过期文档直接删除，不再恢复编号堆叠。
 5. **客户端形态**：原生 React（`lib/client.js` 手写 lazy-CJS，无构建步骤），不用 iframe；不 import 任何 `@deepseek-ai/dsh-client-*` 包；样式只用 `--dsw-alias-*` / `--dsw-elevation-*` token。
 6. **Host 写文件用 `node:fs`**（持久插件在 Host 进程内），不用 `ctx.fs`；唯一写网关是 `TaskService` / `IdeaService` / `ReviewService`（三个域各一个，共用 `WriteGateway` 的队列/幂等/审计），UI 与 AI 都不许另开写路径。
 7. **测试纪律**：自动化测试只用 `os.tmpdir()` 临时数据根，**绝不碰真实 `data/`**；真实环境验收前先备份任务分片、想法文件、复盘文件与插件状态，验收后还原并清理测试任务/想法/复盘/备份。

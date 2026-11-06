@@ -133,6 +133,7 @@ node --test tests/*.test.mjs
 - 功能规格：[`docs/01-功能规格.md`](docs/01-功能规格.md)
 - 实现架构：[`docs/02-实现架构.md`](docs/02-实现架构.md)
 - 整体架构图：[`docs/03-整体架构图.html`](docs/03-整体架构图.html) · [截图](docs/acceptance/架构图.png)
+- 发布与更新：[`docs/04-发布与更新.md`](docs/04-发布与更新.md)
 
 ## License
 

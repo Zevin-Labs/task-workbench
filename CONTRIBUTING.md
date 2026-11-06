@@ -24,6 +24,10 @@ There is no build step. To run a local checkout inside DSH:
 dsh plugin --profile <profile> add /absolute/path/to/personal-task-workbench
 ```
 
+## Releasing
+
+Maintainers: the release and update runbook is [`docs/04-发布与更新.md`](docs/04-发布与更新.md) (Chinese).
+
 ## Rules
 
 - **Tests never touch real data.** Every test uses a temporary data root under `os.tmpdir()`; do not point tests at `data/` or `$DSH_HOME`.

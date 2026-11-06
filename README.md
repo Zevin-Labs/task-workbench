@@ -139,6 +139,7 @@ node --test tests/*.test.mjs
 - Feature spec: [`docs/01-功能规格.md`](docs/01-功能规格.md)
 - Implementation architecture: [`docs/02-实现架构.md`](docs/02-实现架构.md)
 - Architecture diagram: [`docs/03-整体架构图.html`](docs/03-整体架构图.html) · [screenshot](docs/acceptance/架构图.png)
+- Release & update runbook (Chinese): [`docs/04-发布与更新.md`](docs/04-发布与更新.md)
 
 ## License
 
