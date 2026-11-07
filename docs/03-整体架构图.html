@@ -3,877 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>任务工作台 + 想法池 + 复盘 · V3.0 整体架构</title>
+<title>任务工作台 · SQLite 架构图</title>
 <style>
-/* ============================================================
-   任务工作台 · V3.0 整体架构（单页 · B 纸张风格）
-   - 自包含：无外部字体 / 图片 / CDN / JS
-   - 依据：docs/01 功能规格 · docs/02 实现架构
-   - 实现态：V3.0 已实现并通过真实点击验收
-   ============================================================ */
-
-:root{
-  --paper:#f7f4ee;
-  --paper-2:#fbf9f4;
-  --ink:#2b2b28;
-  --ink-2:#4f4b44;
-  --ink-3:#7b756a;
-  --ink-4:#9a9387;
-  --line:#e4ddcf;
-  --line-2:#d3c9b6;
-  --ochre:#a5543a;
-  --ochre-2:#8b4630;
-  --ochre-soft:#f7ede7;
-  --indigo:#40506f;
-  --indigo-2:#33415a;
-  --indigo-soft:#eceff5;
-  --green:#4f7a52;
-  --green-soft:#f1f5ef;
-  --serif:"Songti SC","Noto Serif SC","Source Han Serif SC","STSong",Georgia,serif;
-  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
-}
-
+:root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#202632;background:#f4f6f8}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.75;
-  background-color:var(--paper);
-  background-image:
-    radial-gradient(1100px 520px at 8% -6%, rgba(255,255,255,.6), rgba(255,255,255,0) 62%),
-    radial-gradient(900px 480px at 102% 2%, rgba(196,175,140,.13), rgba(196,175,140,0) 60%),
-    radial-gradient(1200px 800px at 50% 104%, rgba(196,175,140,.1), rgba(196,175,140,0) 62%),
-    repeating-linear-gradient(112deg, rgba(120,100,70,.014) 0 2px, rgba(120,100,70,0) 2px 7px);
-  -webkit-font-smoothing:antialiased;
-}
-.page{max-width:1360px;margin:0 auto;padding:38px 44px 70px}
-code{font-family:var(--mono);font-size:.92em;color:var(--ochre-2);background:rgba(165,84,58,.055);padding:1px 4px;border-radius:2px}
-
-/* ---------- 页头 ---------- */
-.topline{
-  display:flex;justify-content:space-between;align-items:baseline;gap:20px;
-  border-top:2px solid var(--ink);padding-top:10px;
-  font-size:9.5px;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase;
-}
-.masthead{padding-top:30px}
-h1{font-family:var(--serif);font-size:45px;line-height:1.2;font-weight:600;letter-spacing:.015em;margin:0}
-h1 .sep{color:var(--ochre);font-weight:400;padding:0 8px}
-.lede{margin:17px 0 0;font-size:15px;line-height:1.9;color:var(--ink-2);max-width:880px}
-.lede b{font-weight:600;color:var(--ink)}
-.meta-row{display:flex;flex-wrap:wrap;margin-top:20px;font-size:11px;color:var(--ink-3)}
-.meta-row span{padding:0 14px;border-left:1px solid var(--line-2)}
-.meta-row span:first-child{padding-left:0;border-left:0;color:var(--ochre-2)}
-
-.statusbar{
-  margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;
-  border:1px solid var(--line-2);border-left:3px solid var(--ochre);
-  background:var(--paper-2);padding:13px 18px;
-}
-.statusbar .main{display:flex;align-items:baseline;gap:10px;font-size:13px}
-.statusbar .main b{font-family:var(--serif);font-size:15px;color:var(--ochre-2);font-weight:600}
-.statusbar .main span{color:var(--ink-3);font-size:11.5px}
-.statusbar .items{display:flex;gap:16px;font-size:11px;color:var(--ink-3);flex-wrap:wrap}
-.statusbar .items i{font-style:normal;margin-right:5px}
-.statusbar .items .ok{color:var(--green)}
-.statusbar .items .todo{color:var(--ink-4)}
-
-/* ---------- 区块 ---------- */
-.section{padding-top:58px}
-.sec-head{display:flex;align-items:flex-end;gap:18px;padding-bottom:15px;border-bottom:1px solid var(--line-2);margin-bottom:28px}
-.sec-num{font-family:var(--serif);font-size:40px;line-height:.86;color:var(--ochre);opacity:.92;font-weight:500}
-.sec-titles h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:0;line-height:1.25}
-.sec-titles p{margin:5px 0 0;font-size:12px;color:var(--ink-3);line-height:1.65}
-.sec-en{margin-left:auto;font-size:9.5px;letter-spacing:.22em;color:var(--ink-4);text-transform:uppercase;padding-bottom:3px;white-space:nowrap}
-
-/* ---------- 五层图 ---------- */
-.stack{position:relative}
-.layer{
-  display:grid;grid-template-columns:178px minmax(0,1fr);
-  border:1px solid var(--line-2);background:var(--paper-2);
-  box-shadow:0 1px 0 rgba(70,55,35,.04),0 18px 40px -34px rgba(70,55,35,.5);
-}
-.layer-tag{
-  padding:16px 15px 15px;border-right:1px solid var(--line);
-  background:linear-gradient(180deg,#fbf8f1,#f4efe4);
-}
-.layer-tag .k{display:flex;align-items:baseline;gap:8px}
-.layer-tag .k b{font-family:var(--serif);font-size:12.5px;letter-spacing:.1em;color:var(--ochre);font-weight:600}
-.layer-tag .k span{font-size:9px;letter-spacing:.16em;color:var(--ink-4);text-transform:uppercase}
-.layer-tag h3{font-family:var(--serif);font-size:16.5px;margin:8px 0 5px;font-weight:600;line-height:1.35}
-.layer-tag p{margin:0;font-size:10.5px;color:var(--ink-3);line-height:1.6}
-.layer-core{border-color:#dcc9b8;background:#fdfaf6;box-shadow:inset 3px 0 0 var(--ochre),0 1px 0 rgba(70,55,35,.04),0 18px 40px -34px rgba(70,55,35,.5)}
-.layer-ai{border-color:#c9d1e0;background:#fcfcfe;box-shadow:inset 3px 0 0 var(--indigo),0 1px 0 rgba(70,55,35,.04),0 18px 40px -34px rgba(70,55,35,.5)}
-.layer-ai .layer-tag{background:linear-gradient(180deg,#fafbfd,#eef1f6)}
-.layer-ai .layer-tag .k b{color:var(--indigo)}
-.layer-ai .layer-tag h3{color:var(--indigo-2)}
-.layer-body{padding:15px 17px 17px;min-width:0}
-
-.link{position:relative;height:44px;display:flex;align-items:center;justify-content:center}
-.link::before{content:"";position:absolute;left:50%;top:2px;bottom:2px;border-left:1px dashed var(--line-2)}
-.link .lbl{
-  position:relative;display:inline-flex;align-items:center;gap:8px;
-  background:var(--paper);padding:3px 14px;font-size:11.5px;color:var(--ink-3);line-height:1.5;
-  text-align:center;max-width:1050px;
-}
-.link .lbl i{font-style:normal;color:var(--ochre);font-size:12px;line-height:1}
-.link .lbl .x{color:#a9a294}
-.stack-note{margin:13px 0 0;font-size:10.5px;color:var(--ink-4);line-height:1.6;text-align:right}
-
-.nodes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.node{border:1px solid var(--line);background:#fdfbf6;padding:10px 12px 11px}
-.node .nm{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.4}
-.node .cd{font-family:var(--mono);font-size:10.5px;color:var(--ochre-2);margin-top:3px;word-break:break-all;line-height:1.5}
-.node .ds{font-size:10px;color:var(--ink-3);margin-top:4px;line-height:1.5}
-
-.ui-views{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.view{border:1px solid var(--line);background:#fdfbf6;padding:10px 12px 11px}
-.view b{font-family:var(--serif);font-size:14px;font-weight:600}
-.view p{margin:4px 0 0;font-size:10.5px;color:var(--ink-3);line-height:1.55}
-.chiprow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:11px}
-.chiprow .lab{font-size:9px;letter-spacing:.18em;color:var(--ink-4);text-transform:uppercase;margin-right:4px}
-.chip{font-size:11px;color:var(--ink-2);border:1px solid var(--line-2);padding:3px 9px;border-radius:999px;line-height:1.5;white-space:nowrap}
-
-.modules{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.module{border:1px solid var(--line);background:#fdfbf6;padding:10px 12px 11px}
-.module.primary{border-color:#dcbcaa;background:var(--ochre-soft);box-shadow:inset 2px 0 0 var(--ochre)}
-.module b{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.4}
-.module p{margin:4px 0 0;font-size:10px;color:var(--ink-3);line-height:1.55}
-
-.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.ai-box{border:1px solid #d5dae4;background:#fdfdff;padding:12px 14px}
-.ai-box h4{
-  font-family:var(--serif);font-size:13.5px;font-weight:600;margin:0 0 9px;
-  display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--indigo-2);
-}
-.ai-box h4 .ai-k{font-family:var(--sans);font-size:8.5px;letter-spacing:.18em;color:#8d94a3;text-transform:uppercase;font-weight:500}
-.tools{display:flex;flex-wrap:wrap;gap:6px}
-.tool{font-family:var(--mono);font-size:10.5px;color:var(--indigo);background:var(--indigo-soft);border:1px solid #d2d8e4;padding:3px 8px;line-height:1.5}
-.ai-box p{margin:10px 0 0;font-size:10.5px;color:var(--ink-3);line-height:1.6}
-.ai-note{margin-top:11px;padding:9px 13px;border-left:2px solid var(--ochre);background:var(--ochre-soft);font-size:11.5px;color:var(--ink-2);line-height:1.65}
-.ai-note b{font-family:var(--serif);color:var(--ochre-2);font-weight:600;margin-right:6px}
-
-.data-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;align-items:stretch}
-.shard{border:1px solid var(--line);background:#fdfbf6;padding:12px 14px}
-.shard.writable{border-color:#dcbcaa;background:#fdf6f1;box-shadow:inset 2px 0 0 var(--ochre)}
-.shard.readonly{border-style:dashed;background:rgba(255,255,255,.35)}
-.sh-tag{font-size:8.5px;letter-spacing:.14em;color:var(--ink-4);text-transform:uppercase}
-.shard.writable .sh-tag{color:var(--ochre-2)}
-.sh-path{font-family:var(--mono);font-size:11px;color:var(--ink);margin-top:5px;line-height:1.6;word-break:break-all}
-.shard p{margin:6px 0 0;font-size:10.5px;color:var(--ink-3);line-height:1.55}
-.blocks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.block{border:1px solid var(--line);background:#fffdf9;padding:8px 10px}
-.block code{font-size:10.5px;background:transparent;padding:0;color:var(--ochre-2)}
-.block span{display:block;font-size:9.5px;color:var(--ink-3);margin-top:3px;line-height:1.5}
-.side-stack{display:grid;grid-template-rows:auto auto;gap:12px}
-.data-note{margin-top:14px;padding:11px 15px;border:1px dashed var(--line-2);background:rgba(255,255,255,.42);font-size:11.5px;color:var(--ink-2);line-height:1.75}
-.data-note b{font-family:var(--serif);color:var(--ochre-2);font-weight:600;margin-right:6px}
-.rollover{margin-top:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--line-2);background:var(--paper-2);padding:11px 16px;font-size:11.5px;color:var(--ink-2)}
-.rollover b{font-family:var(--serif);font-size:12.5px;color:var(--ochre-2);font-weight:600;white-space:nowrap}
-.rollover .step{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
-.rollover .step code{font-size:10px}
-.rollover .arrow{color:var(--ochre);font-size:12px}
-
-/* ---------- 功能地图 ---------- */
-.fgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
-.span5{grid-column:span 5}
-.span7{grid-column:span 7}
-.span12{grid-column:span 12}
-.fcard{border:1px solid var(--line-2);background:var(--paper-2);padding:17px 19px 18px}
-.fcard header{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:10px}
-.fcard h3{font-family:var(--serif);font-size:17.5px;margin:0;font-weight:600;line-height:1.3}
-.fc-en{font-size:8.5px;letter-spacing:.2em;color:var(--ink-4);text-transform:uppercase;margin-top:3px}
-.tag{margin-left:auto;font-size:9px;letter-spacing:.05em;padding:3px 8px;white-space:nowrap;border:1px solid var(--green);color:var(--green);background:var(--green-soft);line-height:1.5;font-weight:500}
-.fc-lede{margin:0 0 10px;font-size:11px;color:var(--ink-3);line-height:1.7}
-.fc-list{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
-.fcard.span5 .fc-list{grid-template-columns:1fr}
-.fc-list li{position:relative;padding-left:11px;font-size:11.5px;color:var(--ink-2);line-height:1.65}
-.fc-list li::before{content:"·";position:absolute;left:0;top:-1px;color:var(--ochre);font-weight:700}
-.fc-list b{font-weight:600;color:var(--ink);margin-right:5px}
-
-/* ---------- 写路径 ---------- */
-.entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.entry{border:1px solid var(--line-2);background:var(--paper-2);padding:15px 17px;position:relative}
-.entry::before{content:"";position:absolute;left:-1px;top:-1px;width:42px;height:2px;background:var(--ochre)}
-.entry.ai{border-color:#c9d1e0;background:#fcfcfe}
-.entry.ai::before{background:var(--indigo)}
-.entry .en-k{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--ink)}
-.entry.ai .en-k{color:var(--indigo-2)}
-.entry .en-d{font-size:10.5px;color:var(--ink-3);margin-top:3px;line-height:1.6}
-.entry .en-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.en-chip{font-size:10.5px;color:var(--ink-2);border:1px solid var(--line-2);padding:2px 8px;line-height:1.5;white-space:nowrap}
-.entry.ai .en-chip{border-color:#d2d8e4;color:var(--indigo);background:var(--indigo-soft)}
-.merge{display:flex;align-items:center;gap:14px;margin:13px 0;color:var(--ink-3);font-size:11.5px}
-.merge::before,.merge::after{content:"";flex:1;border-top:1px dashed var(--line-2)}
-.merge .mg{display:flex;align-items:center;gap:9px;white-space:nowrap}
-.merge .mg i{font-style:normal;color:var(--ochre);font-size:12px}
-.flow{display:flex;align-items:stretch}
-.step{flex:1;min-width:0;border:1px solid var(--line-2);background:var(--paper-2);padding:13px 14px 14px}
-.step .n{font-family:var(--serif);font-size:10px;letter-spacing:.14em;color:var(--ochre);line-height:1}
-.step h4{font-family:var(--serif);font-size:13.5px;margin:6px 0 4px;font-weight:600;line-height:1.4}
-.step p{margin:0;font-size:10.5px;color:var(--ink-3);line-height:1.6}
-.step code{font-size:9.5px;padding:1px 3px}
-.arrow{width:28px;display:flex;align-items:center;justify-content:center;color:var(--ochre);font-size:12px;flex:none}
-.gate{margin-top:22px;border:1px solid #dcc0b0;background:#fbf6f1;padding:14px 17px}
-.gate-head{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-.gate-k{font-family:var(--serif);font-size:13.5px;font-weight:600;color:var(--ochre-2);white-space:nowrap}
-.gate-d{font-size:10.5px;color:var(--ink-3)}
-.gate-flow{display:flex;align-items:stretch}
-.gate-step{flex:1;min-width:0;border:1px solid #ddc9bb;background:#fffdf9;padding:9px 11px}
-.gate-step b{display:block;font-size:11.5px;font-weight:600;color:var(--ink)}
-.gate-step span{display:block;font-size:10px;color:var(--ink-3);margin-top:2px;line-height:1.5}
-.gate-step.human{border-color:#c6d5c4;background:var(--green-soft)}
-.gate-step.human b{color:var(--green)}
-.callout{margin-top:20px;border:1px solid #dcc0b0;background:#fbf3ee;padding:13px 17px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline}
-.callout b{font-family:var(--serif);font-size:13.5px;color:var(--ochre-2);white-space:nowrap;font-weight:600}
-.callout p{margin:0;font-size:11.5px;color:var(--ink-2);line-height:1.75}
-.callout p + p{margin-top:4px}
-
-/* ---------- 边界 ---------- */
-.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.bcard{border:1px solid var(--line-2);background:var(--paper-2);padding:19px 21px 20px}
-.bcard.do{border-top:2px solid var(--green)}
-.bcard.dont{border-top:2px solid #b8b0a0}
-.bcard h3{font-family:var(--serif);font-size:16px;margin:0 0 11px;font-weight:600}
-.bcard h3 span{font-family:var(--sans);font-size:9px;letter-spacing:.16em;color:var(--ink-4);text-transform:uppercase;margin-left:9px;font-weight:500}
-.bcard ul{list-style:none;margin:0;padding:0}
-.bcard li{position:relative;padding-left:17px;font-size:11.5px;line-height:1.75;color:var(--ink-2);margin-bottom:7px}
-.bcard li:last-child{margin-bottom:0}
-.bcard.do li::before{content:"✓";position:absolute;left:0;top:0;color:var(--green);font-size:10px}
-.bcard.dont li::before{content:"✕";position:absolute;left:0;top:0;color:#a9a294;font-size:9.5px}
-.boundary-note{margin-top:18px;font-size:11px;color:var(--ink-3);line-height:1.75;padding-left:13px;border-left:2px solid var(--line-2)}
-.boundary-note b{color:var(--ink-2);font-weight:600}
-
-/* ---------- 页脚 ---------- */
-.footer{margin-top:60px;border-top:1px solid var(--line-2);padding-top:17px}
-.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:24px;font-size:10.5px;color:var(--ink-3);line-height:1.8}
-.footer-grid b{display:block;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-4);margin-bottom:5px;font-weight:600}
-.footer-end{margin-top:18px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:20px;font-size:10px;color:var(--ink-4);line-height:1.7}
-.footer-end b{color:var(--ochre-2);font-weight:600;font-family:var(--serif);font-size:11px}
+body{margin:0;padding:32px}
+main{max-width:1100px;margin:auto}
+h1{margin:0 0 8px;font-size:30px}
+h2{margin:0 0 14px;font-size:20px}
+p{line-height:1.65;margin:8px 0;color:#4d5867}
+.lead{font-size:16px;margin-bottom:24px}
+.note{padding:12px 16px;border-left:4px solid #bc6b42;background:#fff8f1;border-radius:6px;margin:18px 0 24px}
+.flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:stretch;margin:18px 0}
+.card{background:white;border:1px solid #dfe4ea;border-radius:12px;padding:18px;box-shadow:0 3px 12px #2026320c}
+.card h2{color:#27364a}
+.card strong{color:#9c4f32}
+.pill{display:inline-block;margin:4px 4px 0 0;padding:4px 8px;border-radius:99px;background:#edf2f8;font-size:13px}
+.arrow{display:grid;place-items:center;color:#8b573f;font-size:30px;font-weight:700}
+.schema{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.schema .card{padding:13px}
+.schema h3{margin:0 0 8px;font-size:15px;color:#334e6f}
+.schema p{font-size:13px;margin:4px 0}
+.section{margin-top:28px}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+footer{margin-top:28px;font-size:13px;color:#6f7781}
+@media(max-width:760px){body{padding:16px}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);height:20px}.schema{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="page">
+<main>
+<h1>任务工作台 · 当前架构</h1>
+<p class="lead">本机单用户插件。一个 SQLite 数据库是任务、想法和复盘的唯一真源；界面与 AI 通过同一组领域 Service 读写。</p>
 
-  <!-- ================= 页头 ================= -->
-  <header class="masthead">
-    <div class="topline">
-      <span>Task Workbench + Idea Pool + Review · V3.0 Architecture</span>
-      <span>2026-11-05 · V3.0 · 实现态</span>
-    </div>
+<div class="note"><strong>版本说明：</strong>已发布 npm 0.5.0 使用 Markdown，是历史版本。当前代码不读取或导入旧版 Markdown；首次初始化建立空数据库。</div>
 
-    <h1>任务工作台 + 想法池 + 复盘<span class="sep">·</span>V3.0 整体架构</h1>
-    <p class="lede">
-      一个长在 DeepSeek Harness 里的轻量工作台：<b>今日 / 本周 / 任务 / 想法</b>四个视图，今日页底部是<b>复盘区</b>。
-      任务支持<b>当天 / 跨周期</b>与可选时间，按月分片；想法池支持<b>四态 + 三档成熟度 + 多行描述</b>，单文件长期保留。
-      复盘支持<b>日 / 周 / 月</b>三类，三个单文件长期保留，<b>内容只能由人写、AI 只读</b>。
-      UI 与 AI 各经 <b>TaskService / IdeaService / ReviewService</b> 读写；任务完成、想法状态与复盘正文都由人确认。
-    </p>
-    <div class="meta-row">
-      <span>实现态 · 已安装运行</span>
-      <span>依据 docs/01 功能规格 · docs/02 实现架构</span>
-      <span>真实数据由用户在界面维护</span>
-    </div>
+<section class="flow" aria-label="数据读写路径">
+  <article class="card">
+    <h2>使用入口</h2>
+    <p><strong>UI</strong>：原生 React → 本机同源 /tw/api</p>
+    <p><strong>AI</strong>：14 个既有工具 → 各自领域 Service</p>
+    <span class="pill">任务 7</span><span class="pill">想法 5</span><span class="pill">复盘只读 2</span>
+  </article>
+  <div class="arrow" aria-hidden="true">→</div>
+  <article class="card">
+    <h2>领域 Service</h2>
+    <p>TaskService · IdeaService · ReviewService</p>
+    <p>统一校验、权限、baseVersion、审计和错误返回。</p>
+    <p>UI 与 AI 不绕过 Service 访问数据库。</p>
+  </article>
+  <div class="arrow" aria-hidden="true">→</div>
+  <article class="card">
+    <h2>本机 SQLite</h2>
+    <p>Node 内置 node:sqlite DatabaseSync</p>
+    <p>默认数据根内的 workbench.sqlite</p>
+    <p>同步短事务，提交或回滚业务写入。</p>
+  </article>
+</section>
 
-    <div class="statusbar">
-      <div class="main">
-        <b>V3.0 已实现 · 已验收</b>
-        <span>插件已安装并运行；三个域共用同一套写入纪律，数据在 data/</span>
-      </div>
-      <div class="items">
-        <span><i class="ok">✓</i>功能规格</span>
-        <span><i class="ok">✓</i>实现架构</span>
-        <span><i class="ok">✓</i>复盘验收</span>
-        <span><i class="ok">✓</i>代码</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ================= 01 五层结构 ================= -->
-  <section class="section" id="structure">
-    <div class="sec-head">
-      <span class="sec-num">01</span>
-      <div class="sec-titles">
-        <h2>五层结构</h2>
-        <p>从宿主到数据：UI 与 AI 是两个入口，写入汇入任务 / 想法 / 复盘三个 service。</p>
-      </div>
-      <span class="sec-en">Structure</span>
-    </div>
-
-    <div class="stack">
-
-      <!-- L1 -->
-      <div class="layer">
-        <div class="layer-tag">
-          <div class="k"><b>L1</b><span>Platform</span></div>
-          <h3>DSH 平台层</h3>
-          <p>宿主 · 已存在<br>插件注册进 slot、工具表与 HTTP 路由</p>
-        </div>
-        <div class="layer-body">
-          <div class="nodes">
-            <div class="node">
-              <div class="nm">Dock 入口</div>
-              <div class="cd">sidebar.panellist</div>
-              <div class="ds">侧栏图标 + 今日未完成徽章</div>
-            </div>
-            <div class="node">
-              <div class="nm">主面板</div>
-              <div class="cd">main</div>
-              <div class="ds">整页工作台</div>
-            </div>
-            <div class="node">
-              <div class="nm">工具注册</div>
-              <div class="cd">ctx.tools</div>
-              <div class="ds">把 tw_* 暴露给模型</div>
-            </div>
-            <div class="node">
-              <div class="nm">HTTP 路由</div>
-              <div class="cd">ctx.webServer</div>
-              <div class="ds">/tw/api/*；同源、仅本机</div>
-            </div>
-            <div class="node">
-              <div class="nm">状态目录</div>
-              <div class="cd">$DSH_HOME</div>
-              <div class="ds">settings · state · writes.log</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="link"><span class="lbl"><i>↕</i> 注册 slot（<code>sidebar.panellist</code> / <code>main</code>）· 注入主题 token · 浏览器运行时</span></div>
-
-      <!-- L2 -->
-      <div class="layer">
-        <div class="layer-tag">
-          <div class="k"><b>L2</b><span>Client</span></div>
-          <h3>任务工作台 UI</h3>
-          <p>client 半 · 原生 React · 已实现<br>只发同源请求，不直接接触文件</p>
-        </div>
-        <div class="layer-body">
-          <div class="ui-views">
-            <div class="view"><b>今日</b><p>今天到期 / 逾期 / 今天已完成</p></div>
-            <div class="view"><b>本周</b><p>自然周 7 列 + 跨周期摘要条</p></div>
-            <div class="view"><b>任务总表</b><p>搜索、筛选、含已完成</p></div>
-            <div class="view"><b>想法</b><p>状态统计 / 筛选 / 卡片列表 / 编辑弹窗</p></div>
-            <div class="view"><b>复盘</b><p>今日页底部：日 / 周 / 月；人写、AI 只读</p></div>
-            <div class="view"><b>设置</b><p>数据目录 / 备份 / 主题</p></div>
-          </div>
-          <div class="chiprow">
-            <span class="lab">操作</span>
-            <span class="chip">查看</span>
-            <span class="chip">创建</span>
-            <span class="chip">编辑</span>
-            <span class="chip">删除</span>
-            <span class="chip">任务完成 · 撤销</span>
-            <span class="chip">想法改状态</span>
-            <span class="chip">复盘提交 · 编辑 · 清空</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="link"><span class="lbl"><i>↕</i> 同源 HTTP <code>/tw/api/*</code>（JSON；UI 5s 轮询外部改动）· UI 的唯一读写通道</span></div>
-
-      <!-- L3 -->
-      <div class="layer layer-core">
-        <div class="layer-tag">
-          <div class="k"><b>L3</b><span>Service</span></div>
-          <h3>TaskService / IdeaService / ReviewService</h3>
-          <p>host 半 · Node · 三个域各一个写网关 · 已实现<br>共用 WriteGateway：队列、幂等、备份、审计</p>
-        </div>
-        <div class="layer-body">
-          <div class="modules">
-            <div class="module primary"><b>TaskService</b><p>任务唯一读写层：UI 与 AI 都经这里，同一把 baseHash 锁</p></div>
-            <div class="module primary"><b>IdeaService</b><p>想法唯一读写层：四态 / 成熟度 / 多行描述；状态仅人</p></div>
-            <div class="module primary"><b>ReviewService</b><p>复盘唯一读写层：日/周/月、可写窗口、材料；正文仅人写</p></div>
-            <div class="module"><b>WriteGateway</b><p>串行队列 + requestId 幂等 + 审计，两个 service 共用</p></div>
-            <div class="module"><b>权限</b><p>任务完成、想法改状态、复盘正文仅人；越权 permission-denied</p></div>
-            <div class="module"><b>原子写</b><p>写前备份 → 临时文件 + rename → 回读</p></div>
-            <div class="module"><b>审计</b><p><code>writes.log</code>：actor / 工具 / 前后值</p></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="link"><span class="lbl"><i>↑</i> AI 经 <code>tw_*</code> 工具进入同一 TaskService：同一权限 / 队列 / 锁 / 备份 / 审计</span></div>
-
-      <!-- L4 -->
-      <div class="layer layer-ai">
-        <div class="layer-tag">
-          <div class="k"><b>L4</b><span>AI Agent</span></div>
-          <h3>AI 智能体</h3>
-          <p>模型侧 · 读 + 写 · 已实现<br>与 UI 共用 TaskService，不另开写路径</p>
-        </div>
-        <div class="layer-body">
-          <div class="ai-grid">
-            <div class="ai-box">
-              <h4><span>读工具</span><span class="ai-k">Read</span></h4>
-              <div class="tools">
-                <span class="tool">tw_today</span>
-                <span class="tool">tw_week</span>
-                <span class="tool">tw_list</span>
-                <span class="tool">tw_get_task</span>
-                <span class="tool">tw_idea_list</span>
-                <span class="tool">tw_idea_get</span>
-                <span class="tool">tw_review_list</span>
-                <span class="tool">tw_review_get</span>
-              </div>
-              <p>读今日 / 本周 / 任务列表 / 详情、想法列表 / 详情，以及复盘列表 / 单条正文。</p>
-            </div>
-            <div class="ai-box">
-              <h4><span>写工具</span><span class="ai-k">Write</span></h4>
-              <div class="tools">
-                <span class="tool">tw_create</span>
-                <span class="tool">tw_update</span>
-                <span class="tool">tw_delete</span>
-                <span class="tool">tw_idea_create</span>
-                <span class="tool">tw_idea_update</span>
-                <span class="tool">tw_idea_delete</span>
-              </div>
-              <p>创建 / 编辑 / 删除任务与想法内容；分别经 TaskService / IdeaService，带 actor 审计。<br><b>复盘没有任何写工具</b>（只读）。</p>
-            </div>
-          </div>
-          <p class="ai-note"><b>人工闸门：</b>任务完成 / 撤销完成、想法状态流转、复盘正文都只能由人操作；AI 没有对应写工具，越权返回 <code>permission-denied</code>。</p>
-        </div>
-      </div>
-
-      <div class="link"><span class="lbl"><i>↕</i> 三个 service ⇄ 数据：原子写 · 只读解析<span class="x">　│　✕　AI 不直接读写文件：写入一律经 L3</span></span></div>
-
-      <!-- L5 -->
-      <div class="layer">
-        <div class="layer-tag">
-          <div class="k"><b>L5</b><span>Data</span></div>
-          <h3>数据层</h3>
-          <p>工作台自有目录 · 真实数据<br>默认 <code>$DSH_HOME/task-workbench/data</code>；不进 Git；当月分片唯一可写</p>
-        </div>
-        <div class="layer-body">
-          <div class="data-grid">
-            <div class="shard writable">
-              <span class="sh-tag">任务 · 当月唯一可写</span>
-              <div class="sh-path">data/任务清单/2026-11.md</div>
-              <div class="blocks">
-                <div class="block"><code>## 任务</code><span>未完成的任务（标题 / 日期 / 优先级 / 备注）</span></div>
-                <div class="block"><code>## 已完成</code><span><code>[x]</code> + 完成日期</span></div>
-              </div>
-              <p>当月分片：默认只加载这一份；月切时只把未完成结转到新分片。</p>
-            </div>
-            <div class="side-stack">
-              <div class="shard writable">
-                <span class="sh-tag">想法 · 单文件长期保留</span>
-                <div class="sh-path">data/想法池/想法池.md</div>
-                <div class="blocks">
-                  <div class="block"><code>## 想法</code><span>想法块：元数据行 + 2 空格缩进描述；四态 + 三档成熟度</span></div>
-                </div>
-                <p>不按月切；已完成 / 放弃的想法保留，靠列表筛选查看。</p>
-              </div>
-              <div class="shard writable">
-                <span class="sh-tag">复盘 · 三个单文件长期保留</span>
-                <div class="sh-path">data/复盘/日复盘.md · 周复盘.md · 月复盘.md</div>
-                <div class="blocks">
-                  <div class="block"><code>## 记录</code><span>复盘块：周期键行（日期 / 周一 / YYYY-MM）+ 2 空格缩进正文</span></div>
-                </div>
-                <p>不按月切；首次提交自动建文件；窗口外只读；正文仅人写。</p>
-              </div>
-              <div class="shard readonly">
-                <span class="sh-tag">只读</span>
-                <div class="sh-path">2026-10.md · 2026-09.md …</div>
-                <p>历史月份任务分片：默认不加载，按需只读。</p>
-              </div>
-              <div class="shard">
-                <span class="sh-tag">备份与状态</span>
-                <div class="sh-path">data/备份/YYYY-MM-DD/</div>
-                <p>写前快照（任务 / 想法 / 复盘），保留 7 天；<code>$DSH_HOME/task-workbench/</code> 只放 settings · ids · idea-ids · writes.log（非数据真源）。</p>
-              </div>
-            </div>
-          </div>
-          <p class="data-note"><b>任务不膨胀、想法与复盘不丢：</b>任务活跃清单只装「未完成」，完成记录留在当月分片；想法与复盘单文件长期保留，不做自动归档。当前 <code>data/</code> 由用户在界面维护。</p>
-        </div>
-      </div>
-    </div>
-
-    <p class="stack-note">连线表示依赖方向与接口；UI 与 AI 的写入都汇入 L3。</p>
-  </section>
-
-  <!-- ================= 02 功能地图 ================= -->
-  <section class="section" id="features">
-    <div class="sec-head">
-      <span class="sec-num">02</span>
-      <div class="sec-titles">
-        <h2>功能地图</h2>
-        <p>V3.0 的能力范围；任务 / 想法 / 复盘三个域，每张卡都已实现并在真实界面验收。</p>
-      </div>
-      <span class="sec-en">Features</span>
-    </div>
-
-    <div class="fgrid">
-
-      <!-- 今日 -->
-      <article class="fcard span7">
-        <header>
-          <h3>今日</h3>
-          <span class="fc-en">Today</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">今天要看的任务：进行中的、逾期的、今天完成的。</p>
-        <ul class="fc-list">
-          <li><b>今天要做</b>未完成且 <code>开始日期 &lt;= 今天 &lt;= 结束日期</code>；跨周期任务在区间内每天出现</li>
-          <li><b>跨周期</b>显示「跨周期 11/5 → 11/9 · 第 X/Y 天」与可选开始/结束时间</li>
-          <li><b>逾期</b>结束日期 &lt; 今天，标「逾期 N 天」（只读标记，不自动改日期）</li>
-          <li><b>今天已完成</b>折叠区：<code>完成 == 今天</code> 的任务</li>
-          <li><b>排序</b>优先级 → 全天在前 → 时间 → 文件行序；入口侧栏「任务工作台」</li>
-        </ul>
-      </article>
-
-      <!-- 本周 -->
-      <article class="fcard span5">
-        <header>
-          <h3>本周</h3>
-          <span class="fc-en">Week</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">自然周（周一至周日），7 列；单日任务落列，跨周期任务收在顶部摘要条。</p>
-        <ul class="fc-list">
-          <li><b>7 列日卡</b>每列放 <code>日期 == 当列</code> 的当天任务</li>
-          <li><b>跨周期摘要条</b>一条任务一枚 chip（标题 + 起止日期 + 优先级色点），悬停高亮对应日期列，可直接勾完成</li>
-          <li><b>今天高亮</b>今天之前的列淡显</li>
-          <li><b>不做</b>拖拽改期、农历、节假日</li>
-        </ul>
-      </article>
-
-      <!-- 任务总表 -->
-      <article class="fcard span7">
-        <header>
-          <h3>任务总表</h3>
-          <span class="fc-en">All Tasks</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">所有任务的平铺列表，用来搜索、筛选和批量处理。</p>
-        <ul class="fc-list">
-          <li><b>默认</b>显示全部未完成任务</li>
-          <li><b>含已完成</b>可切换显示已完成任务</li>
-          <li><b>筛选</b>关键词（标题包含）/ 状态 / 优先级；日期列显示时间或区间</li>
-          <li><b>行内操作</b>编辑 / 删除 / 完成</li>
-        </ul>
-      </article>
-
-      <!-- 想法池 -->
-      <article class="fcard span12">
-        <header>
-          <h3>想法池</h3>
-          <span class="fc-en">Idea Pool</span>
-          <span class="tag">V2.0 新增</span>
-        </header>
-        <p class="fc-lede">零摩擦接住想法，再用状态与成熟度整理；状态由人维护，AI 只读写内容。</p>
-        <ul class="fc-list">
-          <li><b>字段</b>编号 <code>I-YYYYMMDD-NN</code> / 名称 / 多行详细描述 / 状态四态 / 成熟度三档 / 分类（可选）</li>
-          <li><b>四态</b>待实现 → 推进中 → 完成 / 放弃；完成自动写完成日期，放弃保留记录</li>
-          <li><b>成熟度</b>低（念头）/ 中（方向清楚）/ 高（可直接排期）；人工标记，不做 1–5 分</li>
-          <li><b>列表</b>状态统计可点击筛选 + 搜索名称/描述 + 成熟度/分类筛选 + 排序；卡片可直接改状态，≥14 天未动显示「已放置 N 天」</li>
-          <li><b>存储</b><code>data/想法池/想法池.md</code> 单文件、不按月切；首次创建自动建文件；写前备份</li>
-          <li><b>AI</b>读列表/详情、新建、编辑内容、删除；<b>没有改状态工具</b></li>
-        </ul>
-      </article>
-
-      <!-- 复盘 -->
-      <article class="fcard span12">
-        <header>
-          <h3>复盘</h3>
-          <span class="fc-en">Daily / Weekly / Monthly Review</span>
-          <span class="tag">V3.0 新增</span>
-        </header>
-        <p class="fc-lede">到点提示、人写、AI 只读；写完留在 Markdown 里，不做打卡与统计。</p>
-        <ul class="fc-list">
-          <li><b>位置</b>今日页「今天已完成」之后，顺序 日 → 周 → 月；周/月块只在窗口内出现</li>
-          <li><b>日复盘</b>每天一条，只写今天；提交后原地展示，可编辑 / 清空</li>
-          <li><b>周复盘</b>本周一 → 周日出现，复盘<b>上一个自然周</b>；不累积更早的周；材料 = 上周任务概况 + 上周日复盘</li>
-          <li><b>月复盘</b>当月<b>最后一天</b>（28/29/30/31 按实际）出现，复盘本月；次月 1–3 日可补写；材料 = 本月任务概况 + 本月周复盘</li>
-          <li><b>可写窗口</b>日=今天 / 周=本周 / 月=月末→次月 3 日；服务端强制，窗口外只读</li>
-          <li><b>存储</b><code>data/复盘/日复盘.md</code>、<code>周复盘.md</code>、<code>月复盘.md</code> 三个单文件、不按月切；无 ID（周期键唯一）；写前备份</li>
-          <li><b>AI</b><b>只读</b>：<code>tw_review_list</code> / <code>tw_review_get</code>；没有写工具，正文只能由人写</li>
-        </ul>
-      </article>
-
-      <!-- 操作 -->
-      <article class="fcard span5">
-        <header>
-          <h3>操作</h3>
-          <span class="fc-en">Actions</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">五个动作，没有 Inbox，也没有归档。</p>
-        <ul class="fc-list">
-          <li><b>新建</b>当天（日期，可带 HH:mm）或跨周期（开始 → 结束，可带开始/结束时间）；不过 Inbox</li>
-          <li><b>编辑</b>标题 / 类型 / 日期 / 时间 / 结束日期 / 结束时间 / 优先级 / 备注；跨周期与当天可互转</li>
-          <li><b>删除</b>硬删除；二次确认 + 写前备份</li>
-          <li><b>完成 · 撤销</b>仅人；写完成日期，撤销后回到待办</li>
-        </ul>
-      </article>
-
-      <!-- AI -->
-      <article class="fcard span7">
-        <header>
-          <h3>AI</h3>
-          <span class="fc-en">Agent</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">AI 是受限写入者：能读、能建改删任务与想法内容，但不能替人完成或改想法状态。</p>
-        <ul class="fc-list">
-          <li><b>任务读 4 工具</b><code>tw_today</code> / <code>tw_week</code> / <code>tw_list</code> / <code>tw_get_task</code></li>
-          <li><b>任务写 3 工具</b><code>tw_create</code> / <code>tw_update</code> / <code>tw_delete</code></li>
-          <li><b>想法读 2 工具</b><code>tw_idea_list</code> / <code>tw_idea_get</code></li>
-          <li><b>想法写 3 工具</b><code>tw_idea_create</code> / <code>tw_idea_update</code> / <code>tw_idea_delete</code></li>
-          <li><b>复盘只读 2 工具</b><code>tw_review_list</code> / <code>tw_review_get</code>（没有写工具）</li>
-          <li><b>人工闸门</b>任务完成 / 撤销、想法改状态、复盘正文都只能由人；AI 没有对应工具，越权返回 <code>permission-denied</code></li>
-          <li><b>审计</b>每次 AI 写记 actor / 工具 / 前后值 / 时间</li>
-        </ul>
-      </article>
-
-      <!-- 设置 -->
-      <article class="fcard span5">
-        <header>
-          <h3>设置</h3>
-          <span class="fc-en">Settings</span>
-          <span class="tag">V1.1 已实现</span>
-        </header>
-        <p class="fc-lede">只放必要配置，不碰任务数据。</p>
-        <ul class="fc-list">
-          <li><b>数据目录</b><code>data/</code> 路径与当月分片位置</li>
-          <li><b>备份</b>保留 7 天，位置 <code>data/备份/</code></li>
-          <li><b>主题</b>B 纸张（默认）/ C 夜色</li>
-        </ul>
-      </article>
-
-    </div>
-  </section>
-
-  <!-- ================= 03 数据模型 ================= -->
-  <section class="section" id="data">
-    <div class="sec-head">
-      <span class="sec-num">03</span>
-      <div class="sec-titles">
-        <h2>数据模型：任务分片 + 想法单文件 + 复盘三文件</h2>
-        <p>任务一个月一个分片，当月唯一可写；想法与复盘单文件长期保留，不按月切。</p>
-      </div>
-      <span class="sec-en">Data Model</span>
-    </div>
-
-    <div class="data-grid">
-      <div class="shard writable">
-        <span class="sh-tag">任务 · 当月唯一可写</span>
-        <div class="sh-path">data/任务清单/2026-11.md</div>
-        <div class="blocks">
-          <div class="block"><code>## 任务</code><span>未完成任务；一行一条，字段：标题 / 日期 / 时间 / 结束日期 / 结束时间 / 优先级 / 备注</span></div>
-          <div class="block"><code>## 已完成</code><span><code>[x]</code> + 完成日期；本月完成记录留在这里</span></div>
-        </div>
-        <p>默认只加载这一份；写前自动备份，写失败不假装成功。</p>
-      </div>
-      <div class="side-stack">
-        <div class="shard writable">
-          <span class="sh-tag">想法 · 单文件长期保留</span>
-          <div class="sh-path">data/想法池/想法池.md</div>
-          <div class="blocks">
-            <div class="block"><code>## 想法</code><span>每个想法 = 元数据行（状态/成熟度/分类/创建/更新/完成）+ 2 空格缩进的多行描述；块间空行分隔</span></div>
-          </div>
-          <p>不按月切；文件不存在时首次创建自动生成；写前自动备份。</p>
-        </div>
-        <div class="shard writable">
-          <span class="sh-tag">复盘 · 三个单文件长期保留</span>
-          <div class="sh-path">data/复盘/日复盘.md · 周复盘.md · 月复盘.md</div>
-          <div class="blocks">
-            <div class="block"><code>## 记录</code><span>每条复盘 = 周期键行（<code>2026-11-05</code> / <code>2026-11-02</code> / <code>2026-11</code>）+ 2 空格缩进正文；空行分段</span></div>
-          </div>
-          <p>不按月切；首次提交自动建文件；可写窗口外只读；周/月材料只读合并相邻月任务分片。</p>
-        </div>
-        <div class="shard readonly">
-          <span class="sh-tag">历史 · 只读</span>
-          <div class="sh-path">2026-10.md · 2026-09.md …</div>
-          <p>历史任务分片：同结构；默认不加载，按需只读，不迁移、不改写。</p>
-        </div>
-        <div class="shard">
-          <span class="sh-tag">备份</span>
-          <div class="sh-path">data/备份/YYYY-MM-DD/</div>
-          <p>每次写入前快照（<code>任务清单-*</code> / <code>想法池-*</code> / <code>日复盘-*</code> / <code>周复盘-*</code> / <code>月复盘-*</code>）；保留 7 天；恢复时手动复制回目标文件。</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="rollover">
-      <b>任务月切</b>
-      <span class="step">当月分片不存在 <span class="arrow">→</span> 新建（月切）</span>
-      <span class="arrow">·</span>
-      <span class="step">只把 <b>未完成任务</b> 搬过去</span>
-      <span class="arrow">·</span>
-      <span class="step">已完成记录留在原月份（只读）</span>
-    </div>
-
-    <p class="data-note"><b>为什么这样分：</b>任务有「月生命周期」，活跃清单只装没做完的事，完成记录按月留在各自分片；想法与复盘是长期资产，放进月分片会被月切破坏，所以单文件保存（复盘按类型分三个文件、互不影响）。历史任务默认不加载，打开即快。</p>
-  </section>
-
-  <!-- ================= 04 一条写路径 ================= -->
-  <section class="section" id="write">
-    <div class="sec-head">
-      <span class="sec-num">04</span>
-      <div class="sec-titles">
-        <h2>三个域，各一条写路径</h2>
-        <p>任务 / 想法 / 复盘分别汇入 TaskService / IdeaService / ReviewService；三者共用 WriteGateway，人工闸门有三个。</p>
-      </div>
-      <span class="sec-en">Write Path</span>
-    </div>
-
-    <div class="entry-grid">
-      <div class="entry">
-        <div class="en-k">入口 A · 工作台 UI</div>
-        <div class="en-d">client 半 · 同源请求 <code>/tw/api/*</code> · 用户直接操作</div>
-        <div class="en-list">
-          <span class="en-chip">查看</span>
-          <span class="en-chip">创建</span>
-          <span class="en-chip">编辑</span>
-          <span class="en-chip">删除</span>
-          <span class="en-chip">任务完成 · 撤销</span>
-          <span class="en-chip">想法改状态</span>
-          <span class="en-chip">复盘提交 · 编辑 · 清空</span>
-        </div>
-      </div>
-      <div class="entry ai">
-        <div class="en-k">入口 B · AI 智能体</div>
-        <div class="en-d">模型侧 · <code>tw_*</code> / <code>tw_idea_*</code> / <code>tw_review_*</code> 工具 · 读 + 创建 / 编辑 / 删除（复盘只读）</div>
-        <div class="en-list">
-          <span class="en-chip">tw_create</span>
-          <span class="en-chip">tw_update</span>
-          <span class="en-chip">tw_delete</span>
-          <span class="en-chip">tw_idea_create</span>
-          <span class="en-chip">tw_idea_update</span>
-          <span class="en-chip">tw_idea_delete</span>
-          <span class="en-chip">tw_review_list</span>
-          <span class="en-chip">tw_review_get</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="merge"><span class="mg"><i>↓</i> 三个域各自汇入 TaskService / IdeaService / ReviewService；共用 WriteGateway 的队列 / 锁 / 审计 <i>↓</i></span></div>
-
-    <div class="flow">
-      <div class="step">
-        <div class="n">STEP 01</div>
-        <h4>TaskService / IdeaService / ReviewService</h4>
-        <p>各自域的写网关：校验 + 权限（复盘含可写窗口）+ 串行队列 + requestId 幂等</p>
-      </div>
-      <div class="arrow">→</div>
-      <div class="step">
-        <div class="n">STEP 02</div>
-        <h4>原子写</h4>
-        <p><code>baseHash</code> 乐观锁 → 写前备份 → 临时文件 + rename → 回读校验</p>
-      </div>
-      <div class="arrow">→</div>
-      <div class="step">
-        <div class="n">STEP 03</div>
-        <h4>目标文件</h4>
-        <p><code>data/任务清单/2026-11.md</code> / <code>data/想法池/想法池.md</code> / <code>data/复盘/*.md</code>（唯一真源；可直接用编辑器查看）</p>
-      </div>
-      <div class="arrow">→</div>
-      <div class="step">
-        <div class="n">STEP 04</div>
-        <h4>审计</h4>
-        <p>actor / 工具 / 前后值 / 时间，append-only</p>
-      </div>
-    </div>
-
-    <div class="gate">
-      <div class="gate-head">
-        <span class="gate-k">人工闸门 ×3</span>
-        <span class="gate-d">「任务完成 / 撤销」「想法状态流转」「复盘正文」只能由人操作；AI 调用一律拒绝</span>
-      </div>
-      <div class="gate-flow">
-        <div class="gate-step">
-          <b>UI 勾选完成 / 改想法状态 / 写复盘</b>
-          <span>任务写 <code>[x]</code> + 完成日期；想法写 <code>状态：</code> + 完成日期；复盘写周期键 + 正文</span>
-        </div>
-        <div class="arrow">→</div>
-        <div class="gate-step human">
-          <b>人确认</b>
-          <span>是否完成、想法推进到哪一步、复盘写什么由人判断；AI 只读不代劳</span>
-        </div>
-        <div class="arrow">→</div>
-        <div class="gate-step">
-          <b>AI 越权</b>
-          <span>返回 <code>permission-denied</code>，不写文件</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="callout">
-      <b>「三个域，各一条写路径；同一套写入纪律」</b>
-      <div>
-        <p>任务 / 想法 / 复盘各自只有一个 service：同一队列、同一把 <code>baseHash</code> 锁、同一份备份与回读——域内没有第二套接口。</p>
-        <p>人工闸门有三个：任务完成 / 撤销、想法状态流转、复盘正文；其余写操作 AI 可直接做，但全部记审计；复盘对 AI 只读。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 05 边界 ================= -->
-  <section class="section" id="boundary">
-    <div class="sec-head">
-      <span class="sec-num">05</span>
-      <div class="sec-titles">
-        <h2>边界</h2>
-        <p>V3.0 只做任务工作台 + 想法池 + 复盘；范围外的事明确不做。</p>
-      </div>
-      <span class="sec-en">Boundaries</span>
-    </div>
-
-    <div class="bgrid">
-      <div class="bcard do">
-        <h3>做<span>In scope</span></h3>
-        <ul>
-          <li>任务登记与管理：今日 / 本周 / 任务总表 / 设置</li>
-          <li>查看、创建、编辑、删除、完成 / 撤销</li>
-          <li>当天 / 跨周期任务 + 可选时间 + 四象限优先级 + 备注</li>
-          <li>想法池：列表 / 筛选 / 搜索、新建、编辑内容、改状态、删除、四态 + 三档成熟度 + 多行描述</li>
-          <li>复盘：日 / 周 / 月三类，窗口内提交 / 编辑 / 清空，周 / 月材料内联，AI 只读</li>
-          <li>AI 读任务 + 创建 / 编辑 / 删除任务；读想法 + 新建 / 编辑内容 / 删除想法；只读复盘（各自 service，带审计）</li>
-          <li>侧栏「任务工作台」入口（不做数字徽章）</li>
-        </ul>
-      </div>
-
-      <div class="bcard dont">
-        <h3>不做<span>Out of scope</span></h3>
-        <ul>
-          <li>不扫知识库；不生成、不依赖外部 Daily 系统</li>
-          <li>固定动作规则 / 项目方向 / 周期任务（重复规则）</li>
-          <li>复盘历史浏览 tab / 复盘统计图表 / 补写更早周期（周只提示上一自然周，月只补次月 1–3 日）</li>
-          <li>AI 写复盘（没有写工具，service 兜底拒绝）</li>
-          <li>农历、节假日；工作台内提醒、系统推送</li>
-          <li>AI 认领 / 待验收 / 人工验收；AI 判断任务是否完成或改想法状态</li>
-          <li>想法 → 任务转化、想法看板、自动归档 / 容量上限</li>
-          <li>迁移 / 导入旧数据；子任务 / 附件 / 标签 / 多人协作</li>
-        </ul>
-      </div>
-    </div>
-
-    <p class="boundary-note">
-      <b>V3.0 的取舍：</b>任务侧先把「记任务、看任务、勾完成」跑顺；想法侧先把「接住想法、标状态/成熟度、定期整理」跑顺；复盘侧只要「到点提示、人写、能回看 Markdown」，不做打卡与统计。三个域共用写入纪律，但数据文件与生命周期分开；转化、看板、提醒、复盘历史等能力以后需要时再加。
-    </p>
-  </section>
-
-  <!-- ================= 页脚 ================= -->
-  <footer class="footer">
-    <div class="footer-grid">
-      <div>
-        <b>依据</b>
-        docs/01 功能规格 · docs/02 实现架构
-      </div>
-      <div>
-        <b>口径</b>
-        数据目录与分片规则以 docs/02 为准；页面细节属于 S3。
-      </div>
-      <div>
-        <b>状态</b>
-        V3.0 已实现 · 已验收；真实数据由用户在界面维护。
-      </div>
-    </div>
-    <div class="footer-end">
-      <span><b>本图描述 V3.0 实现；架构图截图见 docs/acceptance/架构图.png。</b></span>
-      <span>任务工作台 + 想法池 + 复盘 · V3.0 整体架构 · 2026-11-05 · 自包含单页，无外部依赖</span>
-    </div>
-  </footer>
-
+<section class="section">
+<h2>数据库表</h2>
+<div class="schema">
+  <article class="card"><h3>tasks</h3><p>稳定序号 ID</p><p>标题、日期/时间区间、优先级、完成状态、备注</p></article>
+  <article class="card"><h3>ideas</h3><p>稳定序号 ID</p><p>名称、描述、状态、成熟度、分类、日期</p></article>
+  <article class="card"><h3>reviews</h3><p>类型 + 周期键</p><p>正文、更新时间；历史查询只读</p></article>
+  <article class="card"><h3>write_log</h3><p>业务写入审计</p><p>操作、领域、目标、actor、细节</p></article>
+  <article class="card"><h3>meta</h3><p>内部元数据</p><p>schema_version 与领域版本号</p></article>
 </div>
+</section>
+
+<section class="section rules">
+  <article class="card">
+    <h2>事务与冲突</h2>
+    <p>每次写入在短事务内更新业务数据、审计行和领域版本号；任一步失败则回滚。</p>
+    <p>UI 带 baseVersion 防止陈旧页面覆盖较新的数据。AI 可省略版本号。</p>
+  </article>
+  <article class="card">
+    <h2>快照备份</h2>
+    <p>硬删除任务、删除想法、清空复盘前创建 SQLite 快照并校验完整性与目标记录。</p>
+    <p>默认保留 7 天；backupRetentionDays 可设置 1–90 天。</p>
+  </article>
+  <article class="card">
+    <h2>人机权限</h2>
+    <p>任务完成/撤销、想法状态流转、复盘正文只由人操作。</p>
+    <p>AI 可管理任务与想法内容，复盘只有读取工具。</p>
+  </article>
+  <article class="card">
+    <h2>历史语义</h2>
+    <p>跨月任务仍是同一条记录；过月已完成任务只读。</p>
+    <p>复盘按类型和周期键存储，历史入口只读；现有日期窗口不变。</p>
+  </article>
+</section>
+
+<section class="section card">
+<h2>未来扩展边界</h2>
+<p>未来时间块匹配、人与 AI 协作沿用稳定任务 ID 和领域 Service。当前不增加预留字段、表、工具或执行状态机；具体需求确认后再扩展。</p>
+</section>
+
+<footer>
+  <p>数据根默认 DSH_HOME/task-workbench/data；settings.json 仅保存 dataRoot 与 backupRetentionDays。SQLite 版本不导入旧版 Markdown。</p>
+  <p>docs/acceptance/架构图.png 是 0.5.0 Markdown 版本的历史界面验收截图，不表示当前数据结构。</p>
+</footer>
+</main>
 </body>
 </html>
