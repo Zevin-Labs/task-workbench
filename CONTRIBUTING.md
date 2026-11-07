@@ -16,7 +16,7 @@ git clone https://github.com/Zevin-Labs/task-workbench.git
 cd task-workbench
 npm run check        # syntax
 npm run test:task    # targeted example: run only the domain you touched
-npm test             # full 89-test suite; CI runs this on every push, and it is the release gate
+npm test            # full suite; for shared changes, CI, and the release gate
 ```
 
 There is no build step. To run a local checkout inside DSH:
@@ -33,11 +33,11 @@ Maintainers: the release and update runbook is [`docs/04-发布与更新.md`](do
 
 - **Targeted tests by default.** Run the test file(s) for the domain you touched (`npm run test:task|idea|review`, or a single file). CI runs the full suite; maintainers run `npm run verify` once before a release. Do not run the full suite for a small edit and do not repeat it after a targeted pass — see [`docs/05-协作与测试.md`](docs/05-协作与测试.md) for the change → test matrix.
 - **Tests never touch real data.** Every test uses a temporary data root under `os.tmpdir()`; do not point tests at `data/` or `$DSH_HOME`.
-- **One write path.** UI and agents both go through `TaskService` / `IdeaService` / `ReviewService` and the shared `WriteGateway` (queue, idempotency, audit, pre-write backup). Do not add a second write path.
+- **One write path.** UI and agents both go through `TaskService` / `IdeaService` / `ReviewService` to the same SQLite database. Short transactions commit business changes, `write_log` audit entries, and domain versions together; hard deletes and clearing reviews require a validated database snapshot. `WriteGateway` only handles in-process request idempotency and error normalization. Do not add a second write path.
 - **Human-only actions stay human-only.** Completing/uncompleting tasks, changing idea states and writing reviews have no agent write tool; the service layer rejects non-user actors with `permission-denied`.
 - **No new runtime dependencies** unless there is a strong, documented reason. The plugin currently has zero.
 - In a pull request, say what you changed and which targeted tests you ran (with the command and result).
 
 ## Reporting bugs
 
-Open an issue with your DSH version (from the app's About or `dsh --version`), the plugin version, what you expected, what happened, and the relevant Markdown snippet if data is involved. Remove personal task/idea content before pasting.
+Open an issue with your DSH version (from the app's About or `dsh --version`), the plugin version, what you expected, what happened, and the structured error code/message or a minimal reproduction using temporary data. Remove personal content before pasting; do not attach your database or backups.

@@ -40,7 +40,7 @@
     "test:task": "node --test tests/core.test.mjs tests/service.test.mjs tests/routes.test.mjs",
     "test:idea": "node --test tests/idea-core.test.mjs tests/idea-service.test.mjs tests/idea-routes.test.mjs tests/idea-tools.test.mjs",
     "test:review": "node --test tests/review-core.test.mjs tests/review-service.test.mjs tests/review-routes.test.mjs tests/review-tools.test.mjs",
-    "test:cross": "node --test tests/wiring.test.mjs tests/settings.test.mjs tests/skills.test.mjs",
+    "test:cross": "node --test tests/db.test.mjs tests/wiring.test.mjs tests/settings.test.mjs tests/skills.test.mjs",
     "check": "node --check lib/index.js && node --check lib/client.js",
     "verify": "npm run check && npm test",
     "pack:check": "npm pack --dry-run --json | node scripts/verify-pack.mjs",

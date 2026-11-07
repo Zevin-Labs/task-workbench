@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { deriveCounts, deriveList, deriveToday, deriveWeek, publicTask } from '../lib/core/derive.js'
+import { deriveCounts, deriveToday, deriveWeek, publicTask } from '../lib/core/derive.js'
 import { normalizeCreateInput, normalizeUpdateChanges, assertTaskTiming } from '../lib/core/validate.js'
 
 function task(overrides = {}) {
@@ -76,20 +76,6 @@ test('derive: 本周 7 列落位、今天标记与跨周期裁剪', () => {
   assert.equal(longSpan.startsBefore, false)
   assert.equal(longSpan.endsAfter, true)
   assert.equal(week.counts.rangeOpen, 2)
-})
-
-test('derive: 总表默认只看未完成，可按优先级排序', () => {
-  const tasks = [
-    task({ id: 'T-1', title: '写周报', date: '2026-11-05', note: '只写结论', order: 1 }),
-    task({ id: 'T-2', title: '约客户电话', date: '2026-11-06', priority: '重要紧急', order: 2 }),
-    task({ id: 'T-3', title: '整理会议纪要', date: '2026-11-04', done: true, completed: '2026-11-04', order: 3 }),
-  ]
-  const open = deriveList({ tasks }, {})
-  assert.deepEqual(open.map((item) => item.id), ['T-2', 'T-1'])
-  const all = deriveList({ tasks }, { includeCompleted: true })
-  assert.equal(all.length, 3)
-  assert.equal(all[0].id, 'T-2')
-  assert.equal(all.find((item) => item.id === 'T-1').note, '只写结论')
 })
 
 test('derive: 概览计数', () => {

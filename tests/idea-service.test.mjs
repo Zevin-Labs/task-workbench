@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { WorkbenchDatabase } from '../lib/host/db.js'
@@ -38,6 +38,15 @@ async function makeEnv({ now = '2026-11-05T10:00:00', initialized = true } = {})
 }
 
 const agent = () => toolActor({ agent: { session: { id: 'session-idea' } } })
+
+function writeState(env) {
+  const db = env.db.ensureInitialized()
+  return {
+    ideas: db.prepare('SELECT * FROM ideas ORDER BY id').all(),
+    audit: db.prepare('SELECT * FROM write_log ORDER BY id').all(),
+    versions: db.prepare('SELECT * FROM meta ORDER BY meta_key').all(),
+  }
+}
 
 test('idea-service: 未初始化拒绝创建；初始化后空池、默认值与计数正确', async (t) => {
   const env = await makeEnv({ initialized: false })
@@ -183,6 +192,66 @@ test('idea-service: requestId 幂等，重复提交只创建一次', async (t) =
   assert.equal(first.idea.id, second.idea.id)
   assert.equal((await env.service.list()).ideas.length, 1)
   assert.equal(env.one('SELECT COUNT(*) AS n FROM write_log').n, 1)
+})
+
+for (const stage of ['audit', 'bumpVersion']) {
+  test(`idea-service: ${stage} 已写入后失败，想法、审计和版本整体回滚`, async (t) => {
+    const env = await makeEnv()
+    t.after(env.cleanup)
+    const { idea } = await env.service.create({ name: '原想法' }, userActor())
+    const before = writeState(env)
+    const original = env.db[stage]
+    env.db[stage] = function (...args) {
+      original.apply(this, args)
+      throw new Error(`injected ${stage} failure`)
+    }
+    const update = () => env.service.update(idea.id, { changes: { name: '应回滚' } }, userActor(), { requestId: 'failed-write' })
+    try {
+      await assert.rejects(update(), new RegExp(`injected ${stage} failure`))
+      assert.deepEqual(writeState(env), before)
+    } finally {
+      env.db[stage] = original
+    }
+    assert.equal((await update()).idea.name, '应回滚', '失败结果不能进入幂等缓存')
+  })
+}
+
+for (const failure of ['generation', 'verification']) {
+  test(`idea-service: 备份 ${failure} 失败时保留想法、审计和版本`, async (t) => {
+    const env = await makeEnv()
+    t.after(env.cleanup)
+    const { idea } = await env.service.create({ name: '不能删除' }, userActor())
+    const before = writeState(env)
+    let verifiedRecord = false
+    if (failure === 'generation') {
+      await writeFile(env.db.backupDir, '阻止创建备份目录')
+    } else {
+      const original = env.db.backup
+      env.db.backup = function (options) {
+        return original.call(this, { ...options, verify(backup) {
+          verifiedRecord = options.verify(backup)
+          return false
+        } })
+      }
+    }
+    await assert.rejects(env.service.remove(idea.id, {}, userActor()),
+      (error) => error.code === 'backup-failed' && (failure !== 'verification' || /校验失败/.test(error.message)))
+    if (failure === 'verification') assert.equal(verifiedRecord, true, '真实快照必须已通过待删记录检查')
+    assert.deepEqual(writeState(env), before)
+  })
+}
+
+test('idea-service: 人的状态修改不能通过幂等缓存被 AI 回放', async (t) => {
+  const env = await makeEnv()
+  t.after(env.cleanup)
+  const { idea } = await env.service.create({ name: '权限回放检查' }, userActor())
+  const input = { changes: { status: '推进中' } }
+  const requestId = 'human-status'
+  await env.service.update(idea.id, input, userActor(), { requestId })
+  const before = writeState(env)
+  await assert.rejects(env.service.update(idea.id, input, agent(), { requestId }),
+    (error) => error.code === 'permission-denied')
+  assert.deepEqual(writeState(env), before)
 })
 
 test('idea-service: AI 可新建/编辑内容/删除，审计 actor', async (t) => {

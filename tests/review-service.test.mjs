@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { WorkbenchDatabase } from '../lib/host/db.js'
@@ -43,6 +43,15 @@ async function makeEnv({ now = '2026-11-05T10:00:00', initialized = true } = {})
 }
 
 const agent = () => toolActor({ agent: { session: { id: 'session-review' } } })
+
+function writeState(env) {
+  const db = env.db.ensureInitialized()
+  return {
+    reviews: db.prepare('SELECT * FROM reviews ORDER BY kind, period_key').all(),
+    audit: db.prepare('SELECT * FROM write_log ORDER BY id').all(),
+    versions: db.prepare('SELECT * FROM meta ORDER BY meta_key').all(),
+  }
+}
 
 test('review-service: 空数据 → 复盘板给出日/周提示，不写库', async (t) => {
   const env = await makeEnv()
@@ -261,6 +270,73 @@ test('review-service: 清空复盘（备份可读回 + 审计），再清空 not
   )
   const log = env.query('SELECT op FROM write_log ORDER BY id')
   assert.ok(log.some((entry) => entry.op === 'review-delete'))
+})
+
+for (const stage of ['audit', 'bumpVersion']) {
+  test(`review-service: ${stage} 已写入后失败，正文、审计和版本整体回滚`, async (t) => {
+    const env = await makeEnv()
+    t.after(env.cleanup)
+    await env.service.save('daily', '2026-11-05', { text: '原正文' }, userActor())
+    const before = writeState(env)
+    const original = env.db[stage]
+    env.db[stage] = function (...args) {
+      original.apply(this, args)
+      throw new Error(`injected ${stage} failure`)
+    }
+    const save = () => env.service.save('daily', '2026-11-05', { text: '应回滚' }, userActor(), { requestId: 'failed-write' })
+    try {
+      await assert.rejects(save(), new RegExp(`injected ${stage} failure`))
+      assert.deepEqual(writeState(env), before)
+    } finally {
+      env.db[stage] = original
+    }
+    assert.equal((await save()).review.text, '应回滚', '失败结果不能进入幂等缓存')
+  })
+}
+
+for (const failure of ['generation', 'verification']) {
+  test(`review-service: 备份 ${failure} 失败时保留正文、审计和版本`, async (t) => {
+    const env = await makeEnv()
+    t.after(env.cleanup)
+    await env.service.save('daily', '2026-11-05', { text: '不能清空' }, userActor())
+    const before = writeState(env)
+    let verifiedRecord = false
+    if (failure === 'generation') {
+      await writeFile(env.db.backupDir, '阻止创建备份目录')
+    } else {
+      const original = env.db.backup
+      env.db.backup = function (options) {
+        return original.call(this, { ...options, verify(backup) {
+          verifiedRecord = options.verify(backup)
+          return false
+        } })
+      }
+    }
+    await assert.rejects(env.service.clear('daily', '2026-11-05', {}, userActor()),
+      (error) => error.code === 'backup-failed' && (failure !== 'verification' || /校验失败/.test(error.message)))
+    if (failure === 'verification') assert.equal(verifiedRecord, true, '真实快照必须已通过待删记录检查')
+    assert.deepEqual(writeState(env), before)
+  })
+}
+
+test('review-service: 人的提交与清空不能通过幂等缓存被 AI 回放', async (t) => {
+  const env = await makeEnv()
+  t.after(env.cleanup)
+  const kind = 'daily'
+  const key = '2026-11-05'
+  const requestId = 'human-save'
+  await env.service.save(kind, key, { text: '人写的复盘' }, userActor(), { requestId })
+  const savedState = writeState(env)
+  await assert.rejects(env.service.save(kind, key, { text: '人写的复盘' }, agent(), { requestId }),
+    (error) => error.code === 'permission-denied')
+  assert.deepEqual(writeState(env), savedState)
+
+  const clearRequestId = 'human-clear'
+  await env.service.clear(kind, key, {}, userActor(), { requestId: clearRequestId })
+  const clearedState = writeState(env)
+  await assert.rejects(env.service.clear(kind, key, {}, agent(), { requestId: clearRequestId }),
+    (error) => error.code === 'permission-denied')
+  assert.deepEqual(writeState(env), clearedState)
 })
 
 test('review-service: AI 只读 list / get；正文摘要与范围筛选', async (t) => {
