@@ -27,11 +27,13 @@ test('默认数据根落在 $DSH_HOME/task-workbench/data', async () => {
 
     const settings = loadSettings()
     assert.equal(settings.dataRoot, expected)
-    assert.equal(settings.initialized, false)
+    assert.equal(settings.backupRetentionDays, 7)
+    assert.equal(Object.prototype.hasOwnProperty.call(settings, 'initialized'), false)
 
-    // 读取时落一份 settings.json，后续启动复用同一路径
+    // 读取时落一份 settings.json，后续启动复用同一路径；初始化状态不再写进设置。
     const stored = JSON.parse(await readFile(join(root, 'task-workbench', 'settings.json'), 'utf8'))
     assert.equal(stored.dataRoot, expected)
+    assert.equal(Object.prototype.hasOwnProperty.call(stored, 'initialized'), false)
   })
 })
 
@@ -49,7 +51,7 @@ test('已有 settings.json 的 dataRoot 优先，不会被新默认值覆盖', a
     const settings = loadSettings()
     assert.equal(settings.dataRoot, customRoot)
     assert.equal(settings.backupRetentionDays, 3)
-    assert.equal(settings.initialized, true)
+    assert.equal(Object.prototype.hasOwnProperty.call(settings, 'initialized'), false)
   })
 })
 

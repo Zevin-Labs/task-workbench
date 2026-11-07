@@ -4,25 +4,18 @@ import http from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TaskStore } from '../lib/host/store.js'
+import { WorkbenchDatabase } from '../lib/host/db.js'
 import { TaskService } from '../lib/host/service.js'
-import { IdeaStore } from '../lib/host/idea-store.js'
 import { IdeaService } from '../lib/host/idea-service.js'
 import { createRoutes } from '../lib/host/routes.js'
 
 async function makeServer() {
   const root = await mkdtemp(join(tmpdir(), 'twb-idea-route-'))
   const now = () => new Date('2026-11-05T10:00:00')
-  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
-  const store = new TaskStore({ settings, persistSettings: () => {}, now })
-  const service = new TaskService({ store, stateDir: join(root, 'state'), now })
-  const ideaStore = new IdeaStore({
-    settings,
-    persistSettings: () => {},
-    now,
-    isDataRootReady: () => true,
-  })
-  const ideaService = new IdeaService({ store: ideaStore, stateDir: join(root, 'state'), now })
+  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7 }
+  const db = new WorkbenchDatabase({ settings, now })
+  const service = new TaskService({ db, now })
+  const ideaService = new IdeaService({ db, now })
   const server = http.createServer(createRoutes({ service, ideaService, version: '0.2.0-test' }))
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
@@ -31,6 +24,7 @@ async function makeServer() {
     ideaService,
     async close() {
       await new Promise((resolve) => server.close(resolve))
+      db.close()
       await rm(root, { recursive: true, force: true })
     },
   }
@@ -46,7 +40,7 @@ async function call(base, method, path, body, headers = {}) {
   return { status: response.status, payload }
 }
 
-test('idea-routes: bootstrap 带 ideas，增删改查全链路', async (t) => {
+test('idea-routes: bootstrap 带 ideas，初始化后增删改查全链路', async (t) => {
   const env = await makeServer()
   t.after(() => env.close())
 
@@ -54,8 +48,11 @@ test('idea-routes: bootstrap 带 ideas，增删改查全链路', async (t) => {
   assert.equal(health.status, 200)
 
   const before = await call(env.base, 'GET', '/bootstrap')
+  assert.equal(before.payload.data.initialized, false)
   assert.equal(before.payload.data.ideas.initialized, false)
   assert.deepEqual(before.payload.data.ideas.counts, { total: 0, todo: 0, doing: 0, done: 0, dropped: 0, open: 0 })
+
+  await call(env.base, 'POST', '/init', {})
 
   const created = await call(env.base, 'POST', '/ideas', {
     name: '工作台加想法池',
@@ -66,27 +63,29 @@ test('idea-routes: bootstrap 带 ideas，增删改查全链路', async (t) => {
   })
   assert.equal(created.status, 200)
   const idea = created.payload.data.idea
-  assert.match(idea.id, /^I-\d{8}-01$/)
+  assert.match(idea.id, /^I-\d+$/)
   assert.equal(idea.status, '待实现')
   assert.equal(idea.maturity, '中')
+  assert.equal(created.payload.data.version, 1)
 
   const list = await call(env.base, 'GET', '/ideas')
   assert.equal(list.payload.data.ideas.length, 1)
   assert.equal(list.payload.data.counts.todo, 1)
-  assert.equal(list.payload.data.hash, created.payload.data.hash)
+  assert.equal(list.payload.data.version, created.payload.data.version)
 
   const fetched = await call(env.base, 'GET', `/ideas/${idea.id}`)
   assert.equal(fetched.payload.data.idea.name, '工作台加想法池')
 
   const patched = await call(env.base, 'PATCH', `/ideas/${idea.id}`, {
     changes: { name: '工作台加想法池（改）', status: '推进中' },
-    baseHash: list.payload.data.hash,
+    baseVersion: list.payload.data.version,
   })
   assert.equal(patched.payload.data.idea.name, '工作台加想法池（改）')
   assert.equal(patched.payload.data.idea.status, '推进中')
 
-  const removed = await call(env.base, 'DELETE', `/ideas/${idea.id}`, { baseHash: patched.payload.data.hash })
+  const removed = await call(env.base, 'DELETE', `/ideas/${idea.id}`, { baseVersion: patched.payload.data.version })
   assert.equal(removed.payload.data.deleted.id, idea.id)
+  assert.ok(removed.payload.data.backupPath.endsWith('.sqlite'))
 
   const empty = await call(env.base, 'GET', '/ideas')
   assert.equal(empty.payload.data.ideas.length, 0)
@@ -94,17 +93,19 @@ test('idea-routes: bootstrap 带 ideas，增删改查全链路', async (t) => {
   const after = await call(env.base, 'GET', '/bootstrap')
   assert.equal(after.payload.data.ideas.initialized, true)
   assert.equal(after.payload.data.ideas.counts.total, 0)
+  assert.equal(after.payload.data.ideas.version, 3)
 })
 
 test('idea-routes: 结构化错误、未知方法、同源校验', async (t) => {
   const env = await makeServer()
   t.after(() => env.close())
+  await call(env.base, 'POST', '/init', {})
 
   const invalid = await call(env.base, 'POST', '/ideas', { name: '' })
   assert.equal(invalid.status, 400)
   assert.equal(invalid.payload.error.code, 'validation-error')
 
-  const missing = await call(env.base, 'GET', '/ideas/I-20261105-99')
+  const missing = await call(env.base, 'GET', '/ideas/I-999')
   assert.equal(missing.status, 404)
   assert.equal(missing.payload.error.code, 'not-found')
 

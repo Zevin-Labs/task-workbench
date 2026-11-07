@@ -1,131 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  appendReviewBlock, buildReviewBlock, findReview, normalizeReviewText, parseReviewFile,
-  removeReviewBlock, replaceReviewBlock, serializeReviewFile,
-} from '../lib/core/review-grammar.js'
-import {
   deriveReviewBoard, dueReviewPrompts, isReviewWritable, lastDayOfMonth, periodOfKey,
   previousMonthKey, reviewsInRange, summarizePeriodTasks, weeklyReviewsOfMonth,
 } from '../lib/core/review-window.js'
-import { normalizeReviewWriteInput, assertReviewKey } from '../lib/core/review-validate.js'
-
-function emptyFile(kind) {
-  return [
-    '---',
-    `title: ${kind}`,
-    `type: review-${kind}`,
-    'format: 1',
-    'created: 2026-11-05',
-    'updated: 2026-11-05',
-    '---',
-    '',
-    `# ${kind}`,
-    '',
-    '## 记录',
-    '',
-  ].join('\n') + '\n'
-}
-
-test('review-grammar: 追加 / 解析 / 替换 / 删除往返一致', () => {
-  const text = appendReviewBlock(emptyFile('daily'), 'daily', {
-    key: '2026-11-05',
-    updatedAt: '2026-11-05 21:50',
-    text: '今天完成了 A。\n\n发现：B 卡住了。',
-  }, '2026-11-05')
-
-  const model = parseReviewFile(text, { kind: 'daily' })
-  assert.equal(model.readOnly, false)
-  assert.equal(model.reviews.length, 1)
-  assert.equal(model.reviews[0].key, '2026-11-05')
-  assert.equal(model.reviews[0].updatedAt, '2026-11-05 21:50')
-  assert.equal(model.reviews[0].text, '今天完成了 A。\n\n发现：B 卡住了。')
-  assert.match(text, /- `2026-11-05`｜更新：2026-11-05 21:50/)
-  assert.match(text, /\n {2}今天完成了 A。\n {2}\n {2}发现：B 卡住了。\n/)
-
-  const replaced = replaceReviewBlock(text, 'daily', '2026-11-05', {
-    key: '2026-11-05', updatedAt: '2026-11-05 22:10', text: '改过的正文',
-  }, '2026-11-05')
-  const replacedModel = parseReviewFile(replaced, { kind: 'daily' })
-  assert.equal(replacedModel.reviews.length, 1)
-  assert.equal(replacedModel.reviews[0].text, '改过的正文')
-
-  const removed = removeReviewBlock(replaced, 'daily', '2026-11-05', '2026-11-05')
-  const removedModel = parseReviewFile(removed, { kind: 'daily' })
-  assert.equal(removedModel.reviews.length, 0)
-  assert.throws(() => removeReviewBlock(removed, 'daily', '2026-11-05', '2026-11-05'), /不存在/)
-})
-
-test('review-grammar: 正文里的 ｜ / # / - 与多段空行原样保留', () => {
-  const body = '第一段：a｜b\n\n## 不是标题\n- 不是列表\n  indented'
-  const text = appendReviewBlock(emptyFile('weekly'), 'weekly', {
-    key: '2026-11-02', updatedAt: '2026-11-06 09:12', text: body,
-  }, '2026-11-06')
-  const model = parseReviewFile(text, { kind: 'weekly' })
-  assert.equal(model.reviews.length, 1)
-  assert.equal(model.reviews[0].text, body)
-  // 序列化再解析仍一致
-  const again = parseReviewFile(serializeReviewFile(model), { kind: 'weekly' })
-  assert.equal(again.reviews[0].text, body)
-})
-
-test('review-grammar: 未知字段、非法键、重复键按容错处理', () => {
-  const text = [
-    '---', 'title: 日复盘', 'type: review-daily', 'format: 1', 'created: 2026-11-05', 'updated: 2026-11-05', '---',
-    '', '# 日复盘', '', '## 记录', '',
-    '- `2026-11-05`｜更新：2026-11-05 21:50｜天气：晴',
-    '  正文 A',
-    '- `2026-11-06`｜更新：2026-11-06 08:00',
-    '  正文 B',
-    '- `2026-11-05`｜更新：2026-11-06 09:00',
-    '  重复的日复盘',
-    '- `2026-13-01`｜更新：2026-11-06 09:00',
-    '  非法键',
-    '',
-  ].join('\n')
-  const model = parseReviewFile(text, { kind: 'daily' })
-  assert.equal(model.readOnly, false)
-  assert.equal(model.reviews.length, 3)
-  assert.equal(model.reviews[0].unknown.length, 1)
-  assert.match(text, /天气：晴/, '未知字段原样保留')
-  assert.ok(model.warnings.some((w) => w.includes('复盘周期重复')))
-  assert.ok(model.warnings.some((w) => w.includes('不符合日期格式')))
-
-  const kept = replaceReviewBlock(text, 'daily', '2026-11-05', {
-    key: '2026-11-05', updatedAt: '2026-11-06 10:00', text: '新正文', unknown: model.reviews[0].unknown,
-  }, '2026-11-06')
-  assert.match(kept, /天气：晴/)
-  assert.match(kept, /新正文/)
-})
-
-test('review-grammar: frontmatter / type / 区块异常 → 只读', () => {
-  const noFrontmatter = parseReviewFile('## 记录\n', { kind: 'daily' })
-  assert.equal(noFrontmatter.readOnly, true)
-  assert.equal(noFrontmatter.errors[0].code, 'format-version-unsupported')
-
-  const wrongType = parseReviewFile(
-    '---\ntype: review-weekly\nformat: 1\n---\n\n## 记录\n', { kind: 'daily' },
-  )
-  assert.equal(wrongType.readOnly, true)
-  assert.match(wrongType.errors[0].message, /不是日复盘文件/)
-
-  const noSection = parseReviewFile('---\ntype: review-daily\nformat: 1\n---\n\n# 日复盘\n', { kind: 'daily' })
-  assert.equal(noSection.readOnly, true)
-  assert.match(noSection.errors[0].message, /## 记录/)
-
-  assert.throws(() => appendReviewBlock(noSection.lines.join('\n'), 'daily', {
-    key: '2026-11-05', updatedAt: '2026-11-05 21:50', text: 'x',
-  }, '2026-11-05'), /## 记录/)
-})
-
-test('review-grammar: 正文规整（首尾空行 / CRLF / 行尾空格）', () => {
-  assert.equal(normalizeReviewText('\r\n\r\n 第一行  \r\n\r\n第二行\r\n\r\n'), ' 第一行\n\n第二行')
-  const text = appendReviewBlock(emptyFile('daily'), 'daily', {
-    key: '2026-11-05', updatedAt: '2026-11-05 21:50', text: '\n\n正文\n\n',
-  }, '2026-11-05')
-  assert.match(text, /- `2026-11-05`｜更新：2026-11-05 21:50\n {2}正文\n/)
-  assert.equal(parseReviewFile(text, { kind: 'daily' }).reviews[0].text, '正文')
-})
+import {
+  assertReviewKey, normalizeReviewText, normalizeReviewWriteInput,
+} from '../lib/core/review-validate.js'
 
 test('review-window: 日 / 周 / 月 的窗口口径', () => {
   // 周四 2026-11-05：日=今天；周=上周（10/26–11/01）；月未到期
@@ -231,12 +112,15 @@ test('review-window: 复盘板状态与材料挂载', () => {
   assert.equal(board.prompts[1].periodEnd, '2026-11-01')
 })
 
-test('review-validate: 键与正文校验', () => {
+test('review-validate: 键与正文校验（正文可含 ｜ / # / 多段）', () => {
   assert.equal(assertReviewKey('daily', '2026-11-05'), '2026-11-05')
   assert.throws(() => assertReviewKey('weekly', '2026-11-05'), /周一/)
   assert.throws(() => assertReviewKey('monthly', '2026-11-05'), /YYYY-MM/)
   assert.throws(() => assertReviewKey('nope', '2026-11-05'), /daily \/ weekly \/ monthly/)
-  assert.deepEqual(normalizeReviewWriteInput({ text: 'hi  \n\n' }), { text: 'hi' })
+
+  const body = '第一段：a｜b\n\n## 不是标题\n- 不是列表'
+  assert.deepEqual(normalizeReviewWriteInput({ text: `\r\n\r\n${body}\r\n\r\n` }), { text: body })
+  assert.equal(normalizeReviewText('  第一行  \n\n第二行  '), '  第一行\n\n第二行')
   assert.throws(() => normalizeReviewWriteInput({ text: '   ' }), /不能为空/)
   assert.throws(() => normalizeReviewWriteInput({ text: 42 }), /必须是文本/)
   assert.throws(() => normalizeReviewWriteInput({ text: 'x'.repeat(20001) }), /最多 20000/)

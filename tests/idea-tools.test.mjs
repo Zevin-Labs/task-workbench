@@ -1,9 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { IdeaStore } from '../lib/host/idea-store.js'
+import { WorkbenchDatabase } from '../lib/host/db.js'
 import { IdeaService } from '../lib/host/idea-service.js'
 import { createIdeaTools } from '../lib/host/idea-tools.js'
 import { toolActor } from '../lib/host/service.js'
@@ -11,10 +11,18 @@ import { toolActor } from '../lib/host/service.js'
 async function makeEnv() {
   const root = await mkdtemp(join(tmpdir(), 'twb-idea-tool-'))
   const now = () => new Date('2026-11-05T10:00:00')
-  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: true }
-  const store = new IdeaStore({ settings, persistSettings: () => {}, now, isDataRootReady: () => true })
-  const service = new IdeaService({ store, stateDir: join(root, 'state'), now })
-  return { root, store, service, cleanup: () => rm(root, { recursive: true, force: true }) }
+  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7 }
+  const db = new WorkbenchDatabase({ settings, now })
+  db.init()
+  const service = new IdeaService({ db, now })
+  return {
+    root,
+    service,
+    async cleanup() {
+      db.close()
+      await rm(root, { recursive: true, force: true })
+    },
+  }
 }
 
 const exec = { agent: { session: { id: 'session-idea-tools' } } }
@@ -51,9 +59,8 @@ test('idea-tools: AI 新建 / 列表 / 详情 / 编辑 / 删除走同一 service
   assert.equal(created.data.idea.status, '待实现')
   assert.equal(created.data.idea.maturity, '高')
 
-  const text = await readFile(env.store.file, 'utf8')
-  assert.ok(text.includes('AI 记的想法'))
-  assert.ok(text.includes('  第一段\n  第二段'))
+  const stored = await env.service.get(created.data.idea.id)
+  assert.equal(stored.idea.description, '第一段\n第二段')
 
   const list = await tool('tw_idea_list').execute({ status: '待实现' }, exec)
   assert.equal(list.data.ideas.length, 1)

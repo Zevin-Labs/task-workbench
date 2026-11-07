@@ -4,16 +4,17 @@ import http from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TaskStore } from '../lib/host/store.js'
-import { TaskService, userActor } from '../lib/host/service.js'
+import { WorkbenchDatabase } from '../lib/host/db.js'
+import { TaskService } from '../lib/host/service.js'
 import { createRoutes } from '../lib/host/routes.js'
 import { createTools } from '../lib/host/tools.js'
 
-async function makeServer() {
+async function makeServer({ now = '2026-11-05T10:00:00' } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'twb-route-'))
-  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7, initialized: false }
-  const store = new TaskStore({ settings, persistSettings: (next) => { settings.initialized = next.initialized === true } })
-  const service = new TaskService({ store, stateDir: join(root, 'state') })
+  const current = () => new Date(now)
+  const settings = { dataRoot: join(root, 'data'), backupRetentionDays: 7 }
+  const db = new WorkbenchDatabase({ settings, now: current })
+  const service = new TaskService({ db, now: current })
   const server = http.createServer(createRoutes({ service, version: '0.1.0-test' }))
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
@@ -22,6 +23,7 @@ async function makeServer() {
     service,
     async close() {
       await new Promise((resolve) => server.close(resolve))
+      db.close()
       await rm(root, { recursive: true, force: true })
     },
   }
@@ -47,23 +49,33 @@ test('routes: health / init / 增删改查 / 完成', async (t) => {
 
   const before = await call(env.base, 'GET', '/bootstrap')
   assert.equal(before.payload.data.initialized, false)
+  assert.equal(before.payload.data.version, 0)
 
   const init = await call(env.base, 'POST', '/init', {})
   assert.equal(init.payload.data.initialized, true)
 
-  const created = await call(env.base, 'POST', '/tasks', { title: '路由测试', date: '2026-11-05', time: '09:30', endDate: '2026-11-08', priority: '重要紧急', requestId: 'r1' })
+  const created = await call(env.base, 'POST', '/tasks', {
+    title: '路由测试', date: '2026-11-05', time: '09:30', endDate: '2026-11-08', priority: '重要紧急', requestId: 'r1',
+  })
   assert.equal(created.status, 200)
   const task = created.payload.data.task
-  assert.match(task.id, /^T-\d{8}-01$/)
+  assert.match(task.id, /^T-\d+$/)
   assert.equal(task.type, 'range')
   assert.equal(task.time, '09:30')
   assert.equal(task.endDate, '2026-11-08')
+  assert.equal(created.payload.data.version, 1)
 
-  const patched = await call(env.base, 'PATCH', `/tasks/${task.id}`, { changes: { note: '改过备注', endDate: '2026-11-09' }, baseHash: created.payload.data.hash })
+  const patched = await call(env.base, 'PATCH', `/tasks/${task.id}`, {
+    changes: { note: '改过备注', endDate: '2026-11-09' },
+    baseVersion: created.payload.data.version,
+  })
   assert.equal(patched.payload.data.task.note, '改过备注')
   assert.equal(patched.payload.data.task.endDate, '2026-11-09')
 
-  const completed = await call(env.base, 'POST', `/tasks/${task.id}/complete`, { done: true, baseHash: patched.payload.data.hash })
+  const completed = await call(env.base, 'POST', `/tasks/${task.id}/complete`, {
+    done: true,
+    baseVersion: patched.payload.data.version,
+  })
   assert.equal(completed.payload.data.task.done, true)
 
   const fetched = await call(env.base, 'GET', `/tasks/${task.id}`)
@@ -72,8 +84,9 @@ test('routes: health / init / 增删改查 / 完成', async (t) => {
   const list = await call(env.base, 'GET', '/tasks?includeCompleted=true')
   assert.equal(list.payload.data.tasks.length, 1)
 
-  const removed = await call(env.base, 'DELETE', `/tasks/${task.id}`, { baseHash: completed.payload.data.hash })
+  const removed = await call(env.base, 'DELETE', `/tasks/${task.id}`, { baseVersion: completed.payload.data.version })
   assert.equal(removed.payload.data.deleted.id, task.id)
+  assert.ok(removed.payload.data.backupPath.endsWith('.sqlite'))
 
   const empty = await call(env.base, 'GET', '/tasks')
   assert.equal(empty.payload.data.tasks.length, 0)
@@ -83,13 +96,18 @@ test('routes: 结构化错误与同源校验', async (t) => {
   const env = await makeServer()
   t.after(() => env.close())
   await call(env.base, 'POST', '/init', {})
+
   const invalid = await call(env.base, 'POST', '/tasks', { title: '', date: '2026-11-05' })
   assert.equal(invalid.status, 400)
   assert.equal(invalid.payload.error.code, 'validation-error')
 
-  const missing = await call(env.base, 'GET', '/tasks/T-20261105-99')
+  const missing = await call(env.base, 'GET', '/tasks/T-999')
   assert.equal(missing.status, 404)
   assert.equal(missing.payload.error.code, 'not-found')
+
+  const stale = await call(env.base, 'POST', '/tasks', { title: '版本过期', date: '2026-11-05', baseVersion: 99 })
+  assert.equal(stale.status, 409)
+  assert.equal(stale.payload.error.code, 'external-change')
 
   const unknown = await call(env.base, 'GET', '/nope')
   assert.equal(unknown.status, 404)
@@ -102,6 +120,7 @@ test('tools: 注册 7 个 tw_* 工具，无完成工具；工具写入走同一 
   const env = await makeServer()
   t.after(() => env.close())
   await call(env.base, 'POST', '/init', {})
+
   const tools = createTools(env.service)
   const names = tools.map((tool) => tool.name).sort()
   assert.deepEqual(names, ['tw_create', 'tw_delete', 'tw_get_task', 'tw_list', 'tw_today', 'tw_update', 'tw_week'])
@@ -109,7 +128,9 @@ test('tools: 注册 7 个 tw_* 工具，无完成工具；工具写入走同一 
 
   const exec = { agent: { session: { id: 'session-tools' } } }
   const create = tools.find((tool) => tool.name === 'tw_create')
-  const created = await create.execute({ title: 'AI 建任务', date: '2026-11-05', time: '14:00', endDate: '2026-11-07', priority: '重要紧急' }, exec)
+  const created = await create.execute({
+    title: 'AI 建任务', date: '2026-11-05', time: '14:00', endDate: '2026-11-07', priority: '重要紧急',
+  }, exec)
   assert.equal(created.ok, true)
   assert.match(created.message, /已创建任务/)
   assert.equal(created.actor, 'agent:session-tools')
