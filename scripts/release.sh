@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 一条命令发版：全量测试 + 打包校验 → 升版本 → 推 GitHub → npm publish → GitHub Release。
 # 用法：
-#   bash scripts/release.sh                # 交互式：问版本类型、问确认、问 npm token
+#   bash scripts/release.sh                # 交互式：问版本类型、问确认
 #   bash scripts/release.sh patch          # 直接指定 patch / minor / major / 1.2.3
-#   bash scripts/release.sh patch --yes    # 不再确认（token 仍会问）
+#   bash scripts/release.sh patch --yes    # 不再确认（npm 可能要求认证）
 #   bash scripts/release.sh --dry-run      # 只打印将要执行的步骤，不改任何东西
 #
-# 设计前提：仓库根有 package.json，origin 指向 GitHub，npm 账号已登录（2FA 用 Bypass 2FA token）。
+# 设计前提：仓库根有 package.json，origin 指向 GitHub，npm 账号已登录。
 # 若 npm 报 EPERM（~/.npm 里有 root 属主文件）：先 sudo chown -R 501:20 ~/.npm。
 set -euo pipefail
 
@@ -52,6 +52,9 @@ case "$BRANCH" in
   *) die "请在 main/master 上发版（当前分支：$BRANCH）" ;;
 esac
 [ -z "$(git status --porcelain)" ] || die "工作区不干净，先 commit 或 stash"
+if [ "$DRY_RUN" != 1 ]; then
+  npm whoami >/dev/null || die "npm 未登录，请先完成 npm login"
+fi
 
 say "包：$PKG_NAME"
 say "分支：$BRANCH"
@@ -89,16 +92,7 @@ say "3/5 推 GitHub（$BRANCH + tag）"
 run git push origin "$BRANCH" --follow-tags
 
 say "4/5 发布到 npm"
-if [ "$DRY_RUN" = 1 ]; then
-  echo "   [dry-run] npm publish（会提示粘贴 Bypass 2FA token）"
-else
-  printf "npm token（Bypass 2FA，粘贴后回车，屏幕不显示）："
-  read -r -s NPM_TOKEN || die "没有读到 token（非交互环境无法发布）"
-  echo
-  [ -n "${NPM_TOKEN:-}" ] || die "token 为空，已停止（GitHub 已推送，版本已升）"
-  npm publish --//registry.npmjs.org/:_authToken="$NPM_TOKEN"
-  unset NPM_TOKEN
-fi
+run npm publish
 
 say "5/5 建 GitHub Release（有 gh 时）"
 if command -v gh >/dev/null 2>&1; then
@@ -119,4 +113,3 @@ else
 fi
 
 say "完成：$PKG_NAME@$VERSION"
-echo "提醒：回 npm tokens 页面把本次用的 token 删掉。"
