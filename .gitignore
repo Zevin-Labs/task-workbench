@@ -6,6 +6,13 @@ test-tmp/
 coverage/
 /data/
 
+# 本机业务数据：任何位置的 SQLite 库都不进 Git（数据根默认在仓库外，此处仅兜底）
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.db
+
 .playwright-mcp/
 
 # 本机凭据 / 环境变量：开源仓库绝不提交
