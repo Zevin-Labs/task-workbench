@@ -92,7 +92,13 @@ say "3/5 推 GitHub（$BRANCH + tag）"
 run git push origin "$BRANCH" --follow-tags
 
 say "4/5 发布到 npm"
-run npm publish
+# 非交互 shell（Agent）没有 TTY，npm 会直接 EOTP 而不弹浏览器；
+# 用 npm-publish-web.mjs 补齐 isTTY，并把 web 2FA 授权链接交给系统浏览器。详见 docs/04 §4。
+if [ -t 0 ] && [ -t 1 ]; then
+  run npm publish
+else
+  run node scripts/npm-publish-web.mjs publish
+fi
 
 say "5/5 建 GitHub Release（有 gh 时）"
 if command -v gh >/dev/null 2>&1; then
