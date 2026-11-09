@@ -7,7 +7,7 @@
 
 ## 当前状态
 
-当前已发布版本为 [npm 0.6.1](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.1) / [GitHub Release v0.6.1](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.6.1)，发布于 2026-11-08。V3.0 的功能口径保持不变；使用 Node 内置 node:sqlite，数据库文件为数据根下的 workbench.sqlite。0.5.0 保留为历史 Markdown 版本。SQLite 版本初始化为空库，不导入旧数据。旧版测试数据已私下归档，不记录本机路径。
+当前已发布版本为 [npm 0.6.2](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.2) / [GitHub Release v0.6.2](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.6.2)，发布于 2026-11-09。V3.0 的功能口径保持不变；使用 Node 内置 node:sqlite，数据库文件为数据根下的 workbench.sqlite。0.5.0 保留为历史 Markdown 版本。SQLite 版本初始化为空库，不导入旧数据。旧版测试数据已私下归档，不记录本机路径。
 
 要求 Node >=24；DSH 版本范围见 package.json。插件无构建步骤和运行时第三方依赖。
 

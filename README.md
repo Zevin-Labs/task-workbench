@@ -6,7 +6,7 @@ All current data lives in one local SQLite database. The published npm 0.5.0 rel
 
 ## Current status
 
-The current published version is [npm 0.6.1](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.1) / [GitHub Release v0.6.1](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.6.1), released on 2026-11-08. The V3.0 product rules remain in place. It uses Node's built-in node:sqlite and stores the database as workbench.sqlite in the data root. Version 0.5.0 remains the historical Markdown release. Initialization creates an empty database and imports nothing. Legacy test data was privately archived; no machine path is documented.
+The current published version is [npm 0.6.2](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.2) / [GitHub Release v0.6.2](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.6.2), released on 2026-11-09. The V3.0 product rules remain in place. It uses Node's built-in node:sqlite and stores the database as workbench.sqlite in the data root. Version 0.5.0 remains the historical Markdown release. Initialization creates an empty database and imports nothing. Legacy test data was privately archived; no machine path is documented.
 
 Requires Node >=24. The DSH engine range is in package.json. There is no build step or third-party runtime dependency.
 
