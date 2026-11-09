@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { deriveCounts, deriveMonth, deriveToday, deriveWeek, publicTask } from '../lib/core/derive.js'
-import { normalizeCreateInput, normalizeUpdateChanges, assertTaskTiming } from '../lib/core/validate.js'
+import {
+  assertTaskChangePolicy, assertTaskTiming, normalizeCreateInput, normalizeUpdateChanges,
+} from '../lib/core/validate.js'
 
 function task(overrides = {}) {
   return {
@@ -89,35 +91,103 @@ test('derive: 概览计数', () => {
   })
 })
 
-test('derive: publicTask 输出类型与字段', () => {
-  const single = publicTask(task({ id: 'T-1', title: '单日', time: '09:30' }))
+test('derive: publicTask 输出原始字段与有效区间 startAt/endAt', () => {
+  // 单日任务也返回 endTime；未填时刻按默认值派生 startAt/endAt，但不写回原始字段。
+  const single = publicTask(task({ id: 'T-1', title: '单日', time: '09:00' }))
   assert.equal(single.type, 'single')
   assert.equal(single.endDate, null)
   assert.equal(single.endTime, null)
-  assert.equal(single.time, '09:30')
-  const range = publicTask(task({ id: 'T-2', title: '跨周期', time: '09:30', endDate: '2026-11-12', endTime: '18:00' }))
+  assert.equal(single.time, '09:00')
+  assert.equal(single.startAt, '2026-11-05 09:00')
+  assert.equal(single.endAt, '2026-11-05 22:00')
+
+  const defaults = publicTask(task({ id: 'T-2', title: '默认时段' }))
+  assert.equal(defaults.startAt, '2026-11-05 08:00')
+  assert.equal(defaults.endAt, '2026-11-05 22:00')
+
+  // 单日任务填了截止时刻：endTime 返回、endDate 仍为空。
+  const singleWindow = publicTask(task({ id: 'T-5', title: '单日时段', time: '14:00', endTime: '16:00' }))
+  assert.equal(singleWindow.endDate, null)
+  assert.equal(singleWindow.endTime, '16:00')
+  assert.equal(singleWindow.endAt, '2026-11-05 16:00')
+
+  const range = publicTask(task({ id: 'T-3', title: '跨天', time: '09:00', endDate: '2026-11-12', endTime: '18:00' }))
   assert.equal(range.type, 'range')
   assert.equal(range.endDate, '2026-11-12')
   assert.equal(range.endTime, '18:00')
+  assert.equal(range.startAt, '2026-11-05 09:00')
+  assert.equal(range.endAt, '2026-11-12 18:00')
+
+  // 历史分钟值按原样展示，不做迁移。
+  const legacy = publicTask(task({ id: 'T-4', title: '历史分钟', time: '20:45' }))
+  assert.equal(legacy.time, '20:45')
+  assert.equal(legacy.startAt, '2026-11-05 20:45')
+  assert.equal(legacy.endAt, '2026-11-05 22:00')
 })
 
-test('validate: 跨周期与时间规则', () => {
-  const created = normalizeCreateInput({
-    title: 'x', date: '2026-11-05', time: '09:30', endDate: '2026-11-12', endTime: '18:00',
-  }, '2026-11-05')
-  assert.deepEqual(created, {
-    title: 'x', date: '2026-11-05', time: '09:30', endDate: '2026-11-12', endTime: '18:00', priority: null, note: '',
+test('validate: 时间区间默认值、归一化、整点与跨午夜规则', () => {
+  const invalid = (error) => error.code === 'validation-error'
+  const today = '2026-11-05'
+
+  // 都不填：默认值只派生，不写入 time/endDate/endTime。
+  assert.deepEqual(normalizeCreateInput({ title: 'x' }, today), {
+    title: 'x', date: today, time: '', endDate: '', endTime: '', priority: null, note: '',
   })
+  const created = normalizeCreateInput({
+    title: 'x', date: '2026-11-05', time: '09:00', endDate: '2026-11-12', endTime: '18:00',
+  }, today)
+  assert.deepEqual(created, {
+    title: 'x', date: today, time: '09:00', endDate: '2026-11-12', endTime: '18:00', priority: null, note: '',
+  })
+
+  // 截止日期 == 开始日期 → 归一化为空（当天任务）。
+  assert.equal(normalizeCreateInput({ title: 'x', date: today, endDate: today }, today).endDate, '')
+  // 只有截止时间（无截止日期）合法。
+  const endTimeOnly = normalizeCreateInput({ title: 'x', date: today, time: '14:00', endTime: '16:00' }, today)
+  assert.equal(endTimeOnly.endDate, '')
+  assert.equal(endTimeOnly.endTime, '16:00')
+  // 跨午夜 22:00 → 次日 02:00 合法。
+  const overnight = normalizeCreateInput({ title: 'x', date: today, time: '22:00', endDate: '2026-11-06', endTime: '02:00' }, today)
+  assert.deepEqual([overnight.endDate, overnight.endTime], ['2026-11-06', '02:00'])
+
   for (const bad of [
-    { title: 'x', date: '2026-11-05', endDate: '2026-11-05' },
-    { title: 'x', date: '2026-11-05', endDate: '2026-11-04' },
-    { title: 'x', date: '2026-11-05', endTime: '18:00' },
-    { title: 'x', date: '2026-11-05', time: '24:00' },
+    { title: 'x', date: today, time: '09:30' }, // 非整点
+    { title: 'x', date: today, endTime: '18:30' }, // 非整点
+    { title: 'x', date: today, endDate: '2026-11-04' }, // 截止日期早于今天
+    { title: 'x', date: today, endDate: today, endTime: '07:00' }, // endAt <= startAt
+    { title: 'x', date: today, time: '24:00' },
   ]) {
-    assert.throws(() => normalizeCreateInput(bad, '2026-11-05'), (error) => error.code === 'validation-error', JSON.stringify(bad))
+    assert.throws(() => normalizeCreateInput(bad, today), invalid, JSON.stringify(bad))
   }
+
   assert.deepEqual(normalizeUpdateChanges({ endDate: '', endTime: '', time: '' }), { time: '', endDate: '', endTime: '' })
-  assert.throws(() => assertTaskTiming({ date: '2026-11-05', endDate: '2026-11-04' }), (error) => error.code === 'validation-error')
+  assert.throws(() => assertTaskTiming({ date: today, endDate: '2026-11-04' }), invalid)
+  // 历史分钟值在合并校验中仍可保留；同一天要求截止小时更晚。
+  assert.deepEqual(assertTaskTiming({ date: today, time: '20:45' }), { time: '20:45', endDate: '', endTime: '' })
+  assert.throws(() => assertTaskTiming({ date: today, time: '18:00', endTime: '08:00' }), invalid)
+  assert.throws(() => assertTaskTiming({ date: today, time: '08:00', endTime: '08:00' }), invalid)
+})
+
+test('validate: assertTaskChangePolicy 只约束改动的新值，历史分钟值放行', () => {
+  const invalid = (error) => error.code === 'validation-error'
+  const today = '2026-11-05'
+  const legacy = { date: '2026-11-04', time: '20:45', endDate: '2026-11-06', endTime: '21:15' }
+
+  // 未改动字段：历史分钟值与历史截止日期都放行。
+  assert.equal(assertTaskChangePolicy({}, legacy, today), undefined)
+  assert.equal(assertTaskChangePolicy({ title: '改标题' }, legacy, today), undefined)
+  assert.equal(assertTaskChangePolicy({ time: '20:45', endTime: '21:15' }, legacy, today), undefined)
+  assert.equal(assertTaskChangePolicy({ endDate: '2026-11-06' }, legacy, today), undefined)
+
+  // 改成新的整点或新截止日期放行。
+  assert.equal(assertTaskChangePolicy({ time: '21:00' }, legacy, today), undefined)
+  assert.equal(assertTaskChangePolicy({ endTime: '22:00' }, legacy, today), undefined)
+  assert.equal(assertTaskChangePolicy({ endDate: '2026-11-07' }, legacy, today), undefined)
+
+  // 改动后的新值必须整点、截止日期不早于今天。
+  assert.throws(() => assertTaskChangePolicy({ time: '21:30' }, legacy, today), invalid)
+  assert.throws(() => assertTaskChangePolicy({ endTime: '22:30' }, legacy, today), invalid)
+  assert.throws(() => assertTaskChangePolicy({ endDate: '2026-11-04' }, {}, today), invalid)
 })
 
 test('validate: 文本只保留产品语义限制（不再禁全角分隔符）', () => {
@@ -287,6 +357,8 @@ test('deriveMonth: 6 行网格 / 相邻月补位 / 今日 / 统计自洽', () =>
     done: false,
     note: '',
     completed: null,
+    startAt: '2026-11-04 08:00',
+    endAt: '2026-11-09 22:00',
     deadline: true,
   })
   // 月历行只保留网格边界，不再有跨周期区间段

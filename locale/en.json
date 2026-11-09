@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Task Workbench",
-    "description": "A lightweight task manager with an idea pool and reviews: today, week, all-task and idea views, plus a daily/weekly/monthly review area at the bottom of the Today view (written by the human, read-only for agents). Tasks support single-day and multi-day ranges with optional times; ideas have status, maturity and long descriptions. Agents can read/write tasks and idea content and read reviews, but only a human can complete a task, change an idea status or write a review."
+    "description": "A lightweight task manager with an idea pool and reviews: today, week, all-task and idea views, plus a daily/weekly/monthly review area at the bottom of the Today view (written by the human, read-only for agents). Tasks are continuous time intervals (start/end date + hour, with derived defaults); ideas have status, maturity and long descriptions. Agents can read/write tasks and idea content and read reviews, but only a human can complete a task, change an idea status or write a review."
   }
 }

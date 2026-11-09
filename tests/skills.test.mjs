@@ -30,7 +30,7 @@ test('skills: 随包提供 task-workbench 技能', async () => {
   const content = await provider.get({ name: list[0].name, locator: list[0].locator })
   assert.match(content.content, /tw_create/)
   assert.match(content.content, /没有工具/)
-  assert.match(content.content, /跨周期/)
+  assert.match(content.content, /跨天/)
   assert.match(content.content, /tw_review_list/)
   assert.match(content.content, /tw_review_get/)
   assert.match(content.content, /没有创建 \/ 修改 \/ 删除工具/)
@@ -76,13 +76,25 @@ test('skills: 说明的工具与实际注册契约一致，人专有动作不出
 
 test('skills: 文本说明与实际校验器一致：标题单行、详情多行、长度上限一致', () => {
   const body = readSkills(pluginRoot)[0].body
-  const taskSection = body.split('## 任务类型与字段\n')[1].split('\n## ')[0]
+  const taskSection = body.split('## 任务时间与字段\n')[1].split('\n## ')[0]
   const ideaSection = body.split('## 想法池字段\n')[1].split('\n## ')[0]
   assert.match(taskSection, /标题简洁精炼：一句话说清做什么，不写背景 \/ 过程 \/ 结论/)
   assert.match(taskSection, /细节写进详情（note）/)
   assert.match(taskSection, /标题只能单行，不能含换行；详情（note）可以多行/)
+  // 时间模型说明：默认整点、截止日期规则、类型派生、跨午夜合法。
+  assert.match(taskSection, /08:00/)
+  assert.match(taskSection, /22:00/)
+  assert.match(taskSection, /截止日期默认跟随开始日期/)
+  assert.match(taskSection, /只支持整点 HH:00/)
+  assert.match(taskSection, /截止日期不能早于今天/)
+  assert.match(taskSection, /任务类型由日期跨度派生、没有类型参数/)
+  assert.match(taskSection, /跨午夜合法/)
   assert.match(ideaSection, /名称\/分类可以包含全角分隔符 ｜，不能含换行/)
   assert.doesNotMatch(body, /不能含全角分隔符|禁\s*｜/)
+  // 技能里的时间示例必须是整点，不能混入分钟值。
+  assert.doesNotMatch(body, /\b\d{2}:(?!00)\d{2}\b/)
+  assert.match(body, /time: '14:00', endTime: '16:00'/)
+  assert.match(body, /endTime: '02:00'/)
 
   const taskInput = { title: '标题｜后半段', note: '详情第一行\n详情第二行｜' }
   const task = normalizeCreateInput(taskInput, '2026-11-07')
@@ -120,4 +132,18 @@ test('skills: 文本说明与实际校验器一致：标题单行、详情多行
   assert.equal(note('第一行\n第二行'), '第一行\n第二行', '详情应允许多行')
   assert.equal(note('第一行\r\n第二行'), '第一行\n第二行', '详情应把 \\r\\n 归一化为 \\n')
   assert.equal(note('第一行\r第二行'), '第一行\n第二行', '详情应把孤立 \\r 归一化为 \\n')
+
+  // 技能说明的时间模型与校验器一致：新增值整点、只有截止时间合法、跨午夜合法、截止日期不早于今天。
+  assert.throws(() => normalizeCreateInput({ title: 'x', time: '09:30' }, '2026-11-05'), invalid, '技能声明只支持整点')
+  assert.equal(normalizeCreateInput({ title: 'x', time: '14:00', endTime: '16:00' }, '2026-11-05').endTime, '16:00')
+  assert.equal(
+    normalizeCreateInput({ title: 'x', time: '22:00', endDate: '2026-11-06', endTime: '02:00' }, '2026-11-05').endDate,
+    '2026-11-06',
+    '技能声明跨午夜合法',
+  )
+  assert.throws(
+    () => normalizeCreateInput({ title: 'x', endDate: '2026-11-04' }, '2026-11-05'),
+    invalid,
+    '技能声明截止日期不能早于今天',
+  )
 })

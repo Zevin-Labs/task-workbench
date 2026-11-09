@@ -96,6 +96,15 @@ test('service: 创建、默认值、疑似重复与 AI 创建审计', async (t) 
   assert.equal(first.task.priority, '重要不紧急')
   assert.equal(first.task.done, false)
   assert.equal(first.version, 1)
+  // 时间默认值只派生、不落库。
+  assert.equal(first.task.time, null)
+  assert.equal(first.task.endTime, null)
+  assert.equal(first.task.endDate, null)
+  assert.equal(first.task.startAt, '2026-11-05 08:00')
+  assert.equal(first.task.endAt, '2026-11-05 22:00')
+  assert.equal(env.one('SELECT time FROM tasks WHERE id = 1').time, null)
+  assert.equal(env.one('SELECT end_time FROM tasks WHERE id = 1').end_time, null)
+  assert.equal(env.one('SELECT end_date FROM tasks WHERE id = 1').end_date, null)
 
   await assert.rejects(
     env.service.create({ title: '写周报', date: '2026-11-05' }, userActor()),
@@ -355,10 +364,11 @@ test('service: 校验错误不写库、不写审计', async (t) => {
     { title: '坏日期', date: '2026-02-30' },
     { title: '坏优先级', date: '2026-11-05', priority: '最紧急' },
     { title: '超长详情', date: '2026-11-05', note: 'x'.repeat(501) },
-    { title: '范围倒置', date: '2026-11-05', endDate: '2026-11-04' },
-    { title: '范围同天', date: '2026-11-05', endDate: '2026-11-05' },
+    { title: '截止日期早于开始', date: '2026-11-05', endDate: '2026-11-04' },
     { title: '坏时间', date: '2026-11-05', time: '25:00' },
-    { title: '只有结束时间', date: '2026-11-05', endTime: '18:00' },
+    { title: '非整点开始', date: '2026-11-05', time: '09:30' },
+    { title: '非整点截止', date: '2026-11-05', endTime: '18:30' },
+    { title: '截止早于开始', date: '2026-11-05', time: '18:00', endTime: '08:00' },
   ]) {
     await assert.rejects(env.service.create(bad, userActor()), (error) => error.code === 'validation-error', JSON.stringify(bad))
   }
@@ -370,21 +380,34 @@ test('service: 校验错误不写库、不写审计', async (t) => {
   // 旧 Markdown 分隔符不再被禁。
   const allowed = await env.service.create({ title: '写周报｜只写结论', date: '2026-11-05' }, userActor())
   assert.equal(allowed.task.title, '写周报｜只写结论')
+
+  // 新时间模型下合法：只有截止时间、截止日期 == 开始日期。
+  const endTimeOnly = await env.service.create({ title: '只有截止时间', date: '2026-11-05', time: '14:00', endTime: '16:00' }, userActor())
+  assert.equal(endTimeOnly.task.endDate, null)
+  assert.equal(endTimeOnly.task.endTime, '16:00')
+  assert.equal(endTimeOnly.task.startAt, '2026-11-05 14:00')
+  assert.equal(endTimeOnly.task.endAt, '2026-11-05 16:00')
+
+  const sameDay = await env.service.create({ title: '同日截止', date: '2026-11-05', endDate: '2026-11-05' }, userActor())
+  assert.equal(sameDay.task.type, 'single')
+  assert.equal(sameDay.task.endDate, null)
 })
 
-test('service: 创建跨周期/带时间任务，可改回当天', async (t) => {
+test('service: 创建跨天/带时间任务，可改回当天', async (t) => {
   const env = await makeEnv()
   t.after(env.cleanup)
   await env.service.init(userActor())
 
   const { task } = await env.service.create({
-    title: '工作台开发', date: '2026-11-05', time: '09:30', endDate: '2026-11-12', endTime: '18:00', priority: '重要紧急',
+    title: '工作台开发', date: '2026-11-05', time: '09:00', endDate: '2026-11-12', endTime: '18:00', priority: '重要紧急',
   }, userActor())
   assert.equal(task.id, 'T-1')
   assert.equal(task.type, 'range')
-  assert.equal(task.time, '09:30')
+  assert.equal(task.time, '09:00')
   assert.equal(task.endDate, '2026-11-12')
   assert.equal(task.endTime, '18:00')
+  assert.equal(task.startAt, '2026-11-05 09:00')
+  assert.equal(task.endAt, '2026-11-12 18:00')
 
   const today = await env.service.today()
   assert.equal(today.open.length, 1)
@@ -399,6 +422,68 @@ test('service: 创建跨周期/带时间任务，可改回当天', async (t) => 
   assert.equal(updated.task.type, 'single')
   assert.equal(updated.task.endDate, null)
   assert.equal(updated.task.time, null)
+  // 清空时刻后回到默认区间。
+  assert.equal(updated.task.startAt, '2026-11-05 08:00')
+  assert.equal(updated.task.endAt, '2026-11-05 22:00')
+})
+
+test('service: 单日截止时间与跨午夜区间落库读回', async (t) => {
+  const env = await makeEnv()
+  t.after(env.cleanup)
+  await env.service.init(userActor())
+
+  const single = await env.service.create({ title: '单日时段', date: '2026-11-05', time: '14:00', endTime: '16:00' }, userActor())
+  assert.equal(single.task.endDate, null)
+  assert.equal(single.task.endTime, '16:00')
+  assert.equal(single.task.startAt, '2026-11-05 14:00')
+  assert.equal(single.task.endAt, '2026-11-05 16:00')
+  assert.equal(env.one('SELECT end_time FROM tasks WHERE id = 1').end_time, '16:00')
+
+  // 截止日期 == 开始日期时更新同样归一化为空（当天任务）。
+  const sameDayUpdate = await env.service.update(single.task.id, { changes: { endDate: '2026-11-05' } }, userActor())
+  assert.equal(sameDayUpdate.task.endDate, null)
+  assert.equal(sameDayUpdate.task.type, 'single')
+
+  const overnight = await env.service.create({ title: '跨午夜', date: '2026-11-09', time: '22:00', endDate: '2026-11-10', endTime: '02:00' }, userActor())
+  assert.equal(overnight.task.type, 'range')
+  assert.equal(overnight.task.startAt, '2026-11-09 22:00')
+  assert.equal(overnight.task.endAt, '2026-11-10 02:00')
+  const read = await env.service.getTask(overnight.task.id)
+  assert.equal(read.task.endAt, '2026-11-10 02:00')
+})
+
+test('service: 编辑只约束改动的新值，历史分钟值放行', async (t) => {
+  const env = await makeEnv()
+  t.after(env.cleanup)
+  await env.service.init(userActor())
+
+  // 直接写入一条历史数据（分钟值 20:45、当月已完成），模拟旧版本遗留。
+  env.db.ensureInitialized().prepare(`
+    INSERT INTO tasks (title, date, time, end_date, end_time, priority, done, completed, note)
+    VALUES ('历史分钟任务', '2026-11-01', '20:45', NULL, NULL, '重要不紧急', 1, '2026-11-01', '')
+  `).run()
+
+  const read = await env.service.getTask('T-1')
+  assert.equal(read.task.time, '20:45')
+  assert.equal(read.task.startAt, '2026-11-01 20:45')
+  assert.equal(read.task.endAt, '2026-11-01 22:00')
+
+  // 未改动时间字段、原样提交历史分钟值：都放行。
+  assert.equal((await env.service.update('T-1', { changes: { title: '历史分钟任务（改名）' } }, userActor())).task.time, '20:45')
+  assert.equal((await env.service.update('T-1', { changes: { time: '20:45' } }, userActor())).task.time, '20:45')
+
+  // 改成其他分钟值：拒绝；改成整点：允许。
+  await assert.rejects(
+    env.service.update('T-1', { changes: { time: '20:30' } }, userActor()),
+    (error) => error.code === 'validation-error',
+  )
+  assert.equal((await env.service.update('T-1', { changes: { time: '20:00' } }, userActor())).task.time, '20:00')
+
+  // 改动后的截止日期不能早于今天。
+  await assert.rejects(
+    env.service.update('T-1', { changes: { endDate: '2026-11-04' } }, userActor()),
+    (error) => error.code === 'validation-error',
+  )
 })
 
 test('service: 跨周期任务可被完成并保留区间字段', async (t) => {

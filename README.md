@@ -1,6 +1,6 @@
 # Task Workbench · Idea Pool · Reviews
 
-A local DeepSeek Harness plugin for tasks, ideas, and daily/weekly/monthly reviews. Tasks can be single-day or multi-day, with optional times. Ideas support four states, three maturity levels, and multi-line descriptions. People write reviews; the AI can only read them.
+A local DeepSeek Harness plugin for tasks, ideas, and daily/weekly/monthly reviews. Tasks are continuous time intervals (start/end date + hour, with derived defaults). Ideas support four states, three maturity levels, and multi-line descriptions. People write reviews; the AI can only read them.
 
 All current data lives in one local SQLite database. The published npm 0.5.0 release used Markdown and is a historical version. Current code does not read or import legacy Markdown.
 
@@ -57,7 +57,7 @@ Reload the plugin after Host changes and refresh the page after Client changes. 
 
 ## Scope
 
-**Included:** Today / This week / task list; single-day and multi-day tasks; optional times; view, create, edit, delete, complete/undo; week/month overview and read-only month calendar on the week page; idea list, search, filters, and state management; daily/weekly/monthly reviews, review materials, and read-only historical lookup.
+**Included:** Today / This week / task list; continuous task time intervals (start/end hour, defaults derived); view, create, edit, delete, complete/undo; week/month overview and read-only month calendar on the week page; idea list, search, filters, and state management; daily/weekly/monthly reviews, review materials, and read-only historical lookup.
 
 **Not included:** task month-history browser, legacy Markdown import, recurrence, reminders, idea-to-task conversion, kanban, automatic archiving, review statistics, older-period backfilling, time-block matching, or AI claiming/execution/review workflows.
 
