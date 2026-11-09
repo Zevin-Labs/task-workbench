@@ -123,11 +123,11 @@ test('validate: 跨周期与时间规则', () => {
 test('validate: 文本只保留产品语义限制（不再禁全角分隔符）', () => {
   const created = normalizeCreateInput({
     title: '写周报｜只写结论',
-    note: '备注里可以有｜和#',
+    note: '详情里可以有｜和#',
     date: '2026-11-05',
   }, '2026-11-05')
   assert.equal(created.title, '写周报｜只写结论')
-  assert.equal(created.note, '备注里可以有｜和#')
+  assert.equal(created.note, '详情里可以有｜和#')
 
   assert.throws(
     () => normalizeCreateInput({ title: '带\n换行', date: '2026-11-05' }, '2026-11-05'),
@@ -140,6 +140,38 @@ test('validate: 文本只保留产品语义限制（不再禁全角分隔符）'
   assert.throws(
     () => normalizeCreateInput({ title: 'x', date: '2026-11-05', note: 'x'.repeat(501) }, '2026-11-05'),
     (error) => error.code === 'validation-error',
+  )
+})
+
+test('validate: 详情允许多行并归一化换行，标题仍单行，长度上限不变', () => {
+  const invalid = (error) => error.code === 'validation-error'
+  const created = normalizeCreateInput({
+    title: '发周报',
+    note: '第一行\r\n第二行\r第三行',
+    date: '2026-11-05',
+  }, '2026-11-05')
+  assert.equal(created.note, '第一行\n第二行\n第三行', '\\r\\n 与孤立 \\r 应归一化为 \\n')
+  assert.equal(normalizeUpdateChanges({ note: ' 第一行\n第二行 ' }).note, '第一行\n第二行')
+  assert.equal(normalizeUpdateChanges({ note: 'a\r\nb' }).note, 'a\nb')
+
+  // 标题仍拒绝换行（\\n、\\r\\n、孤立 \\r 都算）
+  for (const title of ['带\n换行', '带\r\n换行', '带\r换行']) {
+    assert.throws(() => normalizeCreateInput({ title, date: '2026-11-05' }, '2026-11-05'), invalid, JSON.stringify(title))
+    assert.throws(() => normalizeUpdateChanges({ title }), invalid, JSON.stringify(title))
+  }
+
+  // 换行计入长度，但上限仍是 500
+  const atLimit = normalizeCreateInput({ title: 'x', note: `${'a'.repeat(498)}\nb` }, '2026-11-05')
+  assert.equal(atLimit.note.length, 500)
+  assert.throws(
+    () => normalizeCreateInput({ title: 'x', note: `${'a'.repeat(499)}\nb` }, '2026-11-05'),
+    invalid,
+    '多行详情超过 500 字仍应拒绝',
+  )
+  assert.throws(
+    () => normalizeCreateInput({ title: 'x', note: `${'a'.repeat(499)}\r\nb` }, '2026-11-05'),
+    invalid,
+    '归一化后超过 500 字应拒绝',
   )
 })
 

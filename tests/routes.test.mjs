@@ -66,10 +66,10 @@ test('routes: health / init / 增删改查 / 完成', async (t) => {
   assert.equal(created.payload.data.version, 1)
 
   const patched = await call(env.base, 'PATCH', `/tasks/${task.id}`, {
-    changes: { note: '改过备注', endDate: '2026-11-09' },
+    changes: { note: '改过详情', endDate: '2026-11-09' },
     baseVersion: created.payload.data.version,
   })
-  assert.equal(patched.payload.data.task.note, '改过备注')
+  assert.equal(patched.payload.data.task.note, '改过详情')
   assert.equal(patched.payload.data.task.endDate, '2026-11-09')
 
   const completed = await call(env.base, 'POST', `/tasks/${task.id}/complete`, {

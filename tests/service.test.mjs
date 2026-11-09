@@ -175,7 +175,7 @@ test('service: 编辑与硬删除，写前备份可读回记录，ID 不复用',
   const env = await makeEnv()
   t.after(env.cleanup)
   await env.service.init(userActor())
-  const { task } = await env.service.create({ title: '原标题', date: '2026-11-05', note: '旧备注' }, userActor())
+  const { task } = await env.service.create({ title: '原标题', date: '2026-11-05', note: '旧详情' }, userActor())
 
   const updated = await env.service.update(task.id, {
     changes: { title: '新标题', date: '2026-11-06', priority: '不重要紧急', note: '' },
@@ -204,6 +204,25 @@ test('service: 编辑与硬删除，写前备份可读回记录，ID 不复用',
 
   const next = await env.service.create({ title: '删除后新建', date: '2026-11-05' }, userActor())
   assert.equal(next.task.id, 'T-2', 'AUTOINCREMENT 保证删除后不复用')
+})
+
+test('service: 多行详情落库并按 \\n 读回', async (t) => {
+  const env = await makeEnv()
+  t.after(env.cleanup)
+  await env.service.init(userActor())
+  const { task } = await env.service.create({
+    title: '多行详情', date: '2026-11-05', note: '第一行\r\n第二行\r第三行',
+  }, userActor())
+  assert.equal(task.note, '第一行\n第二行\n第三行', '详情入库前应归一化换行')
+  assert.equal(env.one('SELECT note FROM tasks WHERE id = 1').note, '第一行\n第二行\n第三行')
+
+  const read = await env.service.getTask(task.id)
+  assert.equal(read.task.note, '第一行\n第二行\n第三行', '从数据库读回的详情应保留换行')
+
+  const updated = await env.service.update(task.id, {
+    changes: { note: '改后第一行\n改后第二行' },
+  }, userActor())
+  assert.equal(updated.task.note, '改后第一行\n改后第二行')
 })
 
 test('service: baseVersion 不匹配拒绝覆盖', async (t) => {
@@ -335,7 +354,7 @@ test('service: 校验错误不写库、不写审计', async (t) => {
     { title: '带\n换行', date: '2026-11-05' },
     { title: '坏日期', date: '2026-02-30' },
     { title: '坏优先级', date: '2026-11-05', priority: '最紧急' },
-    { title: '超长备注', date: '2026-11-05', note: 'x'.repeat(501) },
+    { title: '超长详情', date: '2026-11-05', note: 'x'.repeat(501) },
     { title: '范围倒置', date: '2026-11-05', endDate: '2026-11-04' },
     { title: '范围同天', date: '2026-11-05', endDate: '2026-11-05' },
     { title: '坏时间', date: '2026-11-05', time: '25:00' },

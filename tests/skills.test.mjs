@@ -74,15 +74,17 @@ test('skills: 说明的工具与实际注册契约一致，人专有动作不出
   ])
 })
 
-test('skills: 文本说明与实际校验器一致，允许全角分隔符但保持单行和长度限制', () => {
+test('skills: 文本说明与实际校验器一致：标题单行、详情多行、长度上限一致', () => {
   const body = readSkills(pluginRoot)[0].body
   const taskSection = body.split('## 任务类型与字段\n')[1].split('\n## ')[0]
   const ideaSection = body.split('## 想法池字段\n')[1].split('\n## ')[0]
-  assert.match(taskSection, /标题\/备注保持单行，不能含换行；可以包含全角分隔符 ｜/)
+  assert.match(taskSection, /标题简洁精炼：一句话说清做什么，不写背景 \/ 过程 \/ 结论/)
+  assert.match(taskSection, /细节写进详情（note）/)
+  assert.match(taskSection, /标题只能单行，不能含换行；详情（note）可以多行/)
   assert.match(ideaSection, /名称\/分类可以包含全角分隔符 ｜，不能含换行/)
   assert.doesNotMatch(body, /不能含全角分隔符|禁\s*｜/)
 
-  const taskInput = { title: '标题｜后半段', note: '备注｜后半段' }
+  const taskInput = { title: '标题｜后半段', note: '详情第一行\n详情第二行｜' }
   const task = normalizeCreateInput(taskInput, '2026-11-07')
   assert.equal(task.title, taskInput.title)
   assert.equal(task.note, taskInput.note)
@@ -94,14 +96,15 @@ test('skills: 文本说明与实际校验器一致，允许全角分隔符但保
   assert.equal(idea.category, ideaInput.category)
   assert.deepEqual(normalizeIdeaUpdateChanges(ideaInput), ideaInput)
 
-  const titleMax = Number(taskSection.match(/title（≤(\d+) 字）/)[1])
-  const noteMax = Number(taskSection.match(/note（单行，≤(\d+) 字）/)[1])
+  const titleMax = Number(taskSection.match(/title（必填，单行，≤(\d+) 字）/)[1])
+  const noteMax = Number(taskSection.match(/note（详情，可选，多行，≤(\d+) 字）/)[1])
   const nameMax = Number(ideaSection.match(/name（必填，单行，≤(\d+) 字）/)[1])
   const categoryMax = Number(ideaSection.match(/category（可选，单行，≤(\d+) 字）/)[1])
   const invalid = (error) => error.code === 'validation-error'
+
+  // 单行字段：标题 / 名称 / 分类，长度与换行规则和技能声明一致。
   for (const [field, max, normalize] of [
     ['title', titleMax, (value) => normalizeCreateInput({ title: value }, '2026-11-07')],
-    ['note', noteMax, (value) => normalizeCreateInput({ title: 'x', note: value }, '2026-11-07')],
     ['name', nameMax, (value) => normalizeIdeaCreateInput({ name: value }, '2026-11-07')],
     ['category', categoryMax, (value) => normalizeIdeaCreateInput({ name: 'x', category: value }, '2026-11-07')],
   ]) {
@@ -109,4 +112,12 @@ test('skills: 文本说明与实际校验器一致，允许全角分隔符但保
     assert.throws(() => normalize('x'.repeat(max + 1)), invalid, `${field} 应拒绝超过技能声明的长度`)
     assert.throws(() => normalize('有\n换行'), invalid, `${field} 应保持单行`)
   }
+
+  // 详情：多行、\r\n 归一化，长度上限与技能声明一致。
+  const note = (value) => normalizeCreateInput({ title: 'x', note: value }, '2026-11-07').note
+  assert.equal(note('x'.repeat(noteMax)).length, noteMax, 'note 应接受技能声明的长度上限')
+  assert.throws(() => note('x'.repeat(noteMax + 1)), invalid, 'note 应拒绝超过技能声明的长度')
+  assert.equal(note('第一行\n第二行'), '第一行\n第二行', '详情应允许多行')
+  assert.equal(note('第一行\r\n第二行'), '第一行\n第二行', '详情应把 \\r\\n 归一化为 \\n')
+  assert.equal(note('第一行\r第二行'), '第一行\n第二行', '详情应把孤立 \\r 归一化为 \\n')
 })
