@@ -25,7 +25,7 @@ Open “Task Workbench” in the sidebar. Initialize the empty database in the U
 ## Use
 
 1. **Today** shows overdue, today’s open, and today’s completed tasks; the review area is at the bottom.
-2. **This week** shows Monday through Sunday. Multi-day tasks appear in a summary row. Below the board, a week/month overview (segmented completion ring) and a read-only month calendar with month navigation; clicking a date starts a new task.
+2. **This week** shows Monday through Sunday with multi-day tasks drawn as colored tracks into the seven day cards. Below the board, a week/month overview (segmented completion ring) and a read-only month calendar with month navigation; clicking a date opens that day’s tasks, where a task can be edited or a new one added for that date.
 3. **Tasks** lists all open tasks and completed tasks from the current month, with keyword, status, and priority filters.
 4. **Ideas** provides state counts and filters, search, maturity and category filters; people can change states.
 5. **Reviews** can be written, edited, or cleared inside their writable windows. The review area has a simple read-only period lookup for history.

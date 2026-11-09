@@ -183,8 +183,14 @@ test('routes: GET /month 返回 6 行月历与统计', async (t) => {
   assert.equal(data.stats.doing, 1)
   const day9 = data.days.find((day) => day.date === '2026-11-09')
   assert.equal(day9.isToday, true)
-  assert.equal(day9.spanCovered, true)
-  assert.equal(day9.spanDeadline, true)
+  // 跨周期任务只在截止日落一个任务点，不再输出区间段
+  assert.equal(day9.open, 0)
+  assert.equal(day9.total, 1)
+  assert.equal(day9.items[0].title, '月历任务')
+  assert.equal(day9.items[0].type, 'range')
+  assert.equal(day9.items[0].deadline, true)
+  assert.equal(day9.point, 'open')
+  assert.equal(data.rows.every((row) => !('spans' in row) && !('segments' in row)), true)
 
   const next = await call(env.base, 'GET', '/month?month=2026-12')
   assert.equal(next.status, 200)
