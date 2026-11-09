@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { deriveCounts, deriveToday, deriveWeek, publicTask } from '../lib/core/derive.js'
+import { deriveCounts, deriveMonth, deriveToday, deriveWeek, publicTask } from '../lib/core/derive.js'
 import { normalizeCreateInput, normalizeUpdateChanges, assertTaskTiming } from '../lib/core/validate.js'
 
 function task(overrides = {}) {
@@ -141,4 +141,136 @@ test('validate: 文本只保留产品语义限制（不再禁全角分隔符）'
     () => normalizeCreateInput({ title: 'x', date: '2026-11-05', note: 'x'.repeat(501) }, '2026-11-05'),
     (error) => error.code === 'validation-error',
   )
+})
+
+test('deriveWeek: 周统计（完成 / 进行中 / 逾期 / 有任务天数 / 最忙）', () => {
+  const tasks = [
+    task({ id: 'T-1', title: '今天', date: '2026-11-05', order: 1 }),
+    task({ id: 'T-2', title: '本周完成', date: '2026-11-03', done: true, completed: '2026-11-04', order: 2 }),
+    task({ id: 'T-3', title: '本周逾期', date: '2026-11-02', order: 3 }),
+    task({ id: 'T-4', title: '周内跨周期', date: '2026-11-05', endDate: '2026-11-07', order: 4 }),
+  ]
+  const week = deriveWeek({ tasks }, '2026-11-05', '2026-11-05')
+  assert.equal(week.stats.total, 4)
+  assert.equal(week.stats.done, 1)
+  assert.equal(week.stats.overdue, 1)
+  assert.equal(week.stats.doing, 2)
+  assert.equal(week.stats.daysWithTasks, 5)
+  assert.deepEqual(week.stats.busiest, { date: '2026-11-05', count: 2 })
+})
+
+test('deriveMonth: 6 行网格 / 相邻月补位 / 今日 / 统计自洽', () => {
+  const tasks = [
+    task({ id: 'T-1', title: '本月单日', date: '2026-11-09', order: 1 }),
+    task({ id: 'T-2', title: '本月跨周期', date: '2026-11-04', endDate: '2026-11-09', order: 2 }),
+    task({ id: 'T-3', title: '本月完成', date: '2026-11-02', done: true, completed: '2026-11-02', order: 3 }),
+    task({ id: 'T-4', title: '上月任务', date: '2026-10-20', order: 4 }),
+  ]
+  const month = deriveMonth({ tasks }, '2026-11', '2026-11-09')
+  assert.equal(month.month, '2026-11')
+  assert.equal(month.label, '2026 年 11 月')
+  assert.equal(month.start, '2026-11-01')
+  assert.equal(month.end, '2026-11-30')
+  assert.equal(month.gridStart, '2026-10-26')
+  assert.equal(month.days.length, 42)
+  assert.equal(month.rows.length, 6)
+  // 第一行 10/26–11/1：只有 11/1 属于本月
+  assert.deepEqual(month.days.slice(0, 7).map((day) => day.inMonth), [false, false, false, false, false, false, true])
+  assert.equal(month.days[6].date, '2026-11-01')
+  // 相邻月格子不显示任何标记
+  assert.equal(month.days[0].total, 0)
+  assert.equal(month.days[0].open, 0)
+  assert.equal(month.days[0].items.length, 0)
+  // 今日
+  const today = month.days.find((day) => day.date === '2026-11-09')
+  assert.equal(today.isToday, true)
+  assert.equal(today.open, 1)
+  assert.equal(today.spanCovered, true)
+  assert.equal(today.spanDeadline, true)
+  assert.deepEqual(today.items.map((item) => item.title).sort(), ['本月单日', '本月跨周期'].sort())
+  // 上月任务不进入本月集合
+  assert.equal(month.stats.total, 3)
+  assert.equal(month.stats.done, 1)
+  assert.equal(month.stats.overdue, 0)
+  assert.equal(month.stats.doing, 2)
+  assert.equal(month.stats.done + month.stats.doing + month.stats.overdue, month.stats.total)
+  // 跨周期行：11/4–11/9 在第二行（11/2 起）索引 2..6
+  const row = month.rows[1]
+  const span = row.spans.find((item) => item.id === 'T-2')
+  assert.equal(span.startIndex, 2)
+  assert.equal(span.endIndex, 6)
+  assert.equal(span.deadlineIndex, null) // 截止 11/9 落在下一行
+  assert.equal(span.startsBefore, false)
+  assert.equal(span.endsAfter, false)
+  const deadlineRow = month.rows[2].spans.find((item) => item.id === 'T-2')
+  assert.equal(deadlineRow.startIndex, 0)
+  assert.equal(deadlineRow.endIndex, 0)
+  assert.equal(deadlineRow.deadlineIndex, 0)
+  assert.equal(row.spans.filter((item) => item.id === 'T-1').length, 0)
+})
+
+test('deriveMonth: 5 行月份也补满 6 行；跨年月份正确衔接', () => {
+  // 2027-02：28 天且 2/1 是周一 → 只需 4 行，仍补满 6 行
+  const feb = deriveMonth({ tasks: [] }, '2027-02', '2027-02-10')
+  assert.equal(feb.days.length, 42)
+  assert.equal(feb.rows.length, 6)
+  assert.equal(feb.days[0].date, '2027-02-01')
+  assert.equal(feb.days[27].inMonth, true)
+  assert.equal(feb.days[28].inMonth, false)
+  assert.equal(feb.days[28].date, '2027-03-01')
+
+  // 2026-12 → 网格跨到 2027-01
+  const dec = deriveMonth({ tasks: [] }, '2026-12', '2026-12-15')
+  assert.equal(dec.days[0].date, '2026-11-30')
+  assert.equal(dec.days[41].date, '2027-01-10')
+  assert.equal(dec.days.filter((day) => day.inMonth).length, 31)
+})
+
+test('deriveMonth: 空月与非法月份', () => {
+  const empty = deriveMonth({ tasks: [] }, '2026-11', '2026-11-09')
+  assert.deepEqual(empty.stats, { total: 0, done: 0, doing: 0, overdue: 0, daysWithTasks: 0, busiest: { date: null, count: 0 } })
+  assert.equal(empty.rows.every((row) => row.spans.length === 0), true)
+  assert.throws(() => deriveMonth({ tasks: [] }, '2026-13', '2026-11-09'))
+  assert.throws(() => deriveMonth({ tasks: [] }, '2026/11', '2026-11-09'))
+  assert.throws(() => deriveMonth({ tasks: [] }, '', '2026-11-09'))
+})
+
+test('deriveMonth: 跨月任务截断到本月边界，且只在本月画线', () => {
+  const tasks = [
+    task({ id: 'T-1', title: '跨月', date: '2026-10-28', endDate: '2026-11-03', order: 1 }),
+    task({ id: 'T-2', title: '跨到下月', date: '2026-11-28', endDate: '2026-12-05', order: 2 }),
+  ]
+  const month = deriveMonth({ tasks }, '2026-11', '2026-11-09')
+  const first = month.rows[0].spans.find((item) => item.id === 'T-1')
+  assert.equal(first.startIndex, 6)
+  assert.equal(first.endIndex, 6)
+  assert.equal(first.startsBefore, true)
+  const lastRow = month.rows[5]
+  const tail = lastRow.spans.find((item) => item.id === 'T-2')
+  assert.equal(tail.startIndex, 0)
+  assert.equal(tail.endIndex, 0) // 本月只画到 11/30
+  assert.equal(tail.endsAfter, true)
+  assert.equal(tail.deadlineIndex, null)
+  // 12/5 的截止不在本月，因此本月 11/30 不出现截止旗
+  assert.equal(month.days.find((day) => day.date === '2026-11-30').spanDeadline, false)
+})
+
+
+test('deriveMonth: 区间并集（重叠合并、不相交分段、完成态区分）', () => {
+  const tasks = [
+    task({ id: 'T-1', title: 'A', date: '2026-11-04', endDate: '2026-11-09', order: 1 }),
+    task({ id: 'T-2', title: 'B', date: '2026-11-06', endDate: '2026-11-09', order: 2 }),
+    task({ id: 'T-3', title: 'C', date: '2026-11-07', endDate: '2026-11-10', order: 3 }),
+    task({ id: 'T-4', title: 'D', date: '2026-11-20', endDate: '2026-11-21', order: 4 }),
+    task({ id: 'T-5', title: 'E', date: '2026-11-23', endDate: '2026-11-24', done: true, completed: '2026-11-24', order: 5 }),
+  ]
+  const month = deriveMonth({ tasks }, '2026-11', '2026-11-09')
+  // 第二行（11/2–11/8）：3 条重叠 → 并成一段
+  assert.deepEqual(month.rows[1].segments, [{ startIndex: 2, endIndex: 6, open: true }])
+  // 第三行（11/9–11/15）：截止日只有 11/9–11/10
+  assert.deepEqual(month.rows[2].segments, [{ startIndex: 0, endIndex: 1, open: true }])
+  // 第四行（11/16–11/22）：只有一条不相交区间
+  assert.deepEqual(month.rows[3].segments, [{ startIndex: 4, endIndex: 5, open: true }])
+  // 第五行（11/23–11/29）：已完成 → open=false
+  assert.deepEqual(month.rows[4].segments, [{ startIndex: 0, endIndex: 1, open: false }])
 })

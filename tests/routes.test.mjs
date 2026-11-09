@@ -162,3 +162,37 @@ test('tools: 注册 7 个 tw_* 工具，无完成工具；工具写入走同一 
   const listed = await list.execute({ includeCompleted: true }, exec)
   assert.equal(listed.data.tasks.length, 0)
 })
+
+test('routes: GET /month 返回 6 行月历与统计', async (t) => {
+  const env = await makeServer({ now: '2026-11-09T10:00:00' })
+  t.after(() => env.close())
+  await call(env.base, 'POST', '/init', {})
+
+  const created = await call(env.base, 'POST', '/tasks', {
+    title: '月历任务', date: '2026-11-04', endDate: '2026-11-09', requestId: 'm1',
+  })
+  assert.equal(created.status, 200)
+
+  const month = await call(env.base, 'GET', '/month')
+  assert.equal(month.status, 200)
+  const data = month.payload.data
+  assert.equal(data.month, '2026-11')
+  assert.equal(data.days.length, 42)
+  assert.equal(data.rows.length, 6)
+  assert.equal(data.stats.total, 1)
+  assert.equal(data.stats.doing, 1)
+  const day9 = data.days.find((day) => day.date === '2026-11-09')
+  assert.equal(day9.isToday, true)
+  assert.equal(day9.spanCovered, true)
+  assert.equal(day9.spanDeadline, true)
+
+  const next = await call(env.base, 'GET', '/month?month=2026-12')
+  assert.equal(next.status, 200)
+  assert.equal(next.payload.data.month, '2026-12')
+  assert.equal(next.payload.data.stats.total, 0)
+  assert.equal(next.payload.data.days[0].date, '2026-11-30')
+
+  const bad = await call(env.base, 'GET', '/month?month=2026-13')
+  assert.equal(bad.status, 400)
+  assert.equal(bad.payload.error.code, 'validation-error')
+})
