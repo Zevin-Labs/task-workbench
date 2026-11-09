@@ -159,6 +159,56 @@ test('deriveWeek: 周统计（完成 / 进行中 / 逾期 / 有任务天数 / �
   assert.deepEqual(week.stats.busiest, { date: '2026-11-05', count: 2 })
 })
 
+test('deriveWeek: 跨周期轨道排序（截止晚→重要度→开始日→创建序）', () => {
+  const tasks = [
+    task({ id: 'T-1', date: '2026-11-04', endDate: '2026-11-09', priority: '重要不紧急', order: 1 }),
+    task({ id: 'T-2', date: '2026-11-06', endDate: '2026-11-09', priority: '重要不紧急', order: 2 }),
+    task({ id: 'T-3', date: '2026-11-09', endDate: '2026-11-11', priority: '重要不紧急', order: 3 }),
+    task({ id: 'T-4', date: '2026-11-09', endDate: '2026-11-11', priority: '重要紧急', order: 4 }),
+    task({ id: 'T-5', date: '2026-11-12', endDate: '2026-11-20', priority: '重要不紧急', order: 5 }),
+  ]
+  const week = deriveWeek({ tasks }, '2026-11-09', '2026-11-09')
+  // 截止晚的在上：T-5(11/20) → T-4/T-3(11/11，重要紧急在前) → T-1/T-2(11/9，开始早的在前)
+  assert.deepEqual(week.spans.map((span) => span.id), ['T-5', 'T-4', 'T-3', 'T-1', 'T-2'])
+  assert.deepEqual(week.spans.map((span) => span.lane), [0, 1, 2, 3, 4])
+})
+
+test('deriveWeek: 每格带高 = 当天最大轨道号 + 1，截止卡落在本周最后一天', () => {
+  const tasks = [
+    task({ id: 'T-1', date: '2026-11-04', endDate: '2026-11-09', order: 1 }),
+    task({ id: 'T-2', date: '2026-11-06', endDate: '2026-11-09', order: 2 }),
+    task({ id: 'T-3', date: '2026-11-09', endDate: '2026-11-11', order: 3 }),
+    task({ id: 'T-4', date: '2026-11-12', endDate: '2026-11-20', order: 4 }),
+  ]
+  const week = deriveWeek({ tasks }, '2026-11-09', '2026-11-09')
+  const day = (date) => week.days.find((item) => item.date === date)
+  // 周一 4 条都在跑 → 4 轨；周二起 T-1/T-2 结束
+  // 周一在跑的是 T-1/T-2/T-3，占轨道 1..3；T-4 还没开始，所以第 0 轨空着
+  assert.equal(day('2026-11-09').spanLanes, 4)
+  assert.equal(day('2026-11-09').spanActive, 3)
+  assert.deepEqual(day('2026-11-09').spanEnds, ['T-1', 'T-2'])
+  // 周二只剩 T-3（轨道 1）→ 带高 2；周三 T-3 收尾
+  assert.equal(day('2026-11-10').spanLanes, 2)
+  assert.deepEqual(day('2026-11-11').spanEnds, ['T-3'])
+  // 延续到下周的 T-4 落在周日；周日只剩它一条
+  assert.equal(day('2026-11-15').spanLanes, 1)
+  assert.deepEqual(day('2026-11-15').spanEnds, ['T-4'])
+  // 没有跨周期任务的日子，带高为 0（不占位）
+  const empty = deriveWeek({ tasks: [] }, '2026-11-09', '2026-11-09')
+  assert.deepEqual(empty.days.map((item) => item.spanLanes), [0, 0, 0, 0, 0, 0, 0])
+})
+
+test('deriveWeek: 轨道平手时按开始时间、创建序兜底', () => {
+  const tasks = [
+    task({ id: 'T-1', date: '2026-11-09', endDate: '2026-11-10', order: 2 }),
+    task({ id: 'T-2', date: '2026-11-09', endDate: '2026-11-10', order: 1 }),
+    task({ id: 'T-3', date: '2026-11-09', endDate: '2026-11-10', time: '09:00', order: 3 }),
+  ]
+  const week = deriveWeek({ tasks }, '2026-11-09', '2026-11-09')
+  // 全天在前（T-2 创建早于 T-1），再按 HH:mm
+  assert.deepEqual(week.spans.map((span) => span.id), ['T-2', 'T-1', 'T-3'])
+})
+
 test('deriveMonth: 6 行网格 / 相邻月补位 / 今日 / 统计自洽', () => {
   const tasks = [
     task({ id: 'T-1', title: '本月单日', date: '2026-11-09', order: 1 }),
