@@ -1,76 +1,97 @@
-# Task Workbench · Idea Pool · Reviews
+# 任务工作台 · 想法池 · 复盘
 
-A local DeepSeek Harness plugin for tasks, ideas, and daily/weekly/monthly reviews. Tasks are continuous time intervals (start/end date + hour, with derived defaults). Ideas support four states, three maturity levels, and multi-line descriptions. People write reviews; the AI can only read them.
+> 装在 DeepSeek Harness 里的本机任务工作台：管任务、攒想法、写日/周/月复盘。数据只保存在你自己电脑上的一个 SQLite 文件里，插件运行时不访问外部服务，也不需要账号。
 
-All current data lives in one local SQLite database. The published npm 0.5.0 release used Markdown and is a historical version. Current code does not read or import legacy Markdown.
+[English README](README.en.md) · 当前版本 [0.6.2](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.2)（2026-11-09）
 
-## Current status
+## 它能做什么
 
-The current published version is [npm 0.6.2](https://www.npmjs.com/package/dsh-task-workbench/v/0.6.2) / [GitHub Release v0.6.2](https://github.com/Zevin-Labs/task-workbench/releases/tag/v0.6.2), released on 2026-11-09. The V3.0 product rules remain in place. It uses Node's built-in node:sqlite and stores the database as workbench.sqlite in the data root. Version 0.5.0 remains the historical Markdown release. Initialization creates an empty database and imports nothing. Legacy test data was privately archived; no machine path is documented.
+把「今天要做什么」「脑子里还没成形的念头」「这周、这个月过得怎么样」放在同一个地方：你自己说了算，AI 可以帮着整理。
 
-Requires Node >=24. The DSH engine range is in package.json. There is no build step or third-party runtime dependency.
+- **任务**：今日、本周、任务总表三个视角。一个任务就是一段连续时间——开始/截止日期加整点，没填的部分按默认值算（开始 08:00、截止 22:00，日期默认今天）。支持四象限优先级、多行详情，以及查看、新建、编辑、删除、完成/撤销。跨天的任务会在本周页用彩色轨道贯穿 7 个日卡；底部还有本周/本月完成率概览和可翻月的月历，点日期就能查看当天任务，或直接在那天新建、编辑。
+- **想法池**：把还没排期的念头先收进来。四种状态（待实现 / 推进中 / 完成 / 放弃）、三档成熟度（低 / 中 / 高）、分类和长描述，支持搜索与筛选；状态只由你自己改。
+- **复盘**：日、周、月三种，在可写窗口内可以写、改、清空；周/月复盘会带上周期内的相关材料。过了窗口的历史复盘只读，AI 也只能看，正文一律由人写。
 
-## Install
+## 快速开始
 
-Install from npm:
+**环境**：Node >= 24；DeepSeek Harness 版本需满足 `package.json` 里的 `engines.dsh`（当前为 `>=0.2.2-rc.1 <0.3.0`）。插件没有构建步骤，也没有运行时第三方依赖。
 
-    dsh plugin --profile <profile> add dsh-task-workbench
+**安装**（二选一）：
 
-Or install from GitHub:
+```sh
+dsh plugin --profile <profile> add dsh-task-workbench
+dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
+```
 
-    dsh plugin --profile <profile> add github:Zevin-Labs/task-workbench
+**开始使用**：打开侧栏「任务工作台」→ 首次使用在页面里点一下初始化，得到空数据库 → 直接建任务。
 
-Open “Task Workbench” in the sidebar. Initialize the empty database in the UI on first use.
+> 从 0.5.0（历史 Markdown 版本）升级时，旧数据不会自动导入，也不会被改动或删除；当前版本不读取旧版 Markdown。
 
-## Use
+## 页面速览
 
-1. **Today** shows overdue, today’s open, and today’s completed tasks; the review area is at the bottom.
-2. **This week** shows Monday through Sunday with multi-day tasks drawn as colored tracks into the seven day cards. Below the board, a week/month overview (segmented completion ring) and a read-only month calendar with month navigation; clicking a date opens that day’s tasks, where a task can be edited or a new one added for that date.
-3. **Tasks** lists all open tasks and completed tasks from the current month, with keyword, status, and priority filters.
-4. **Ideas** provides state counts and filters, search, maturity and category filters; people can change states.
-5. **Reviews** can be written, edited, or cleared inside their writable windows. The review area has a simple read-only period lookup for history.
-6. **AI** has 14 tools: 7 task tools, 5 idea tools, and 2 read-only review tools. AI can manage task and idea content. People alone complete tasks, change idea states, and write review prose.
+| 页面 | 你能做什么 |
+| --- | --- |
+| 今日 | 看逾期、今天要做和今天已完成的任务；页面底部是复盘区 |
+| 本周 | 周一到周日 7 个日卡，跨天任务按轨道贯穿；底部看完成率概览和月历，点日期查看、新建或编辑当天任务 |
+| 任务 | 查看全部未完成任务和本月已完成的任务，按关键词、状态、优先级筛选 |
+| 想法 | 按状态统计与筛选，搜索名称/描述，按成熟度、分类过滤，手动改状态 |
+| 复盘 | 在窗口内写、改、清空，还能回看历史周期 |
 
-Date rules are unchanged: daily reviews cover today; weekly reviews cover the previous natural week and are available Monday–Sunday; monthly reviews cover the current month and are available on the last day through the 3rd of the next month.
+**复盘的可写窗口**（过了窗口就只能看）：
 
-## Data and privacy
+| 类型 | 什么时候能写 | 写的是哪一段 |
+| --- | --- | --- |
+| 日复盘 | 仅当天 | 今天 |
+| 周复盘 | 周一至周日 | 上一个自然周 |
+| 月复盘 | 当月最后一天至次月 3 日 | 本月；次月补写时指上月 |
 
-- The database is workbench.sqlite in the data root. By default this is DSH_HOME/task-workbench/data; settings.json can override dataRoot.
-- It contains tasks, ideas, reviews, write_log, and the internal meta table. settings.json stores only dataRoot and backupRetentionDays; initialization state is determined from the database.
-- UI and AI tools call the domain services and use the same database. Short SQLite transactions commit business changes, the audit row, and the domain version together. Requests may include baseVersion to reject stale updates.
-- A task spanning months remains one database record. Completed tasks from prior months are read-only.
-- Before a hard delete or clearing a review, the plugin creates and validates a SQLite snapshot. Backups default to 7 days and backupRetentionDays can be set from 1 to 90.
-- The plugin does not scan knowledge bases, Daily systems, or external notes, make external network requests, or import legacy Markdown. The data root is independent of plugin installation. Back up and copy the database when moving machines.
-- Task and idea IDs are stable sequential IDs such as T-1 and I-1. Future time-block planning and human/AI collaboration are not implemented; no future fields or tools are pre-created.
+## 数据放在哪，安全吗
 
-## Development
+- 默认位置是 `DSH_HOME/task-workbench/data/workbench.sqlite`，可在 `settings.json` 里用 `dataRoot` 改；**数据目录与插件安装目录分开**。
+- 一个 SQLite 文件装下任务、想法、复盘和操作日志；初始化得到的是空库，不扫描知识库、Daily 或外部笔记，也不导入旧版 Markdown。
+- 插件运行时不发起外部网络请求，没有账号体系、云同步或多端登录（安装插件本身需要从 npm / GitHub 拉取）。
+- 删除任务/想法、清空复盘之前，会自动生成并校验一次数据库快照；备份默认保留 7 天，`backupRetentionDays` 可设 1–90 天。
+- 升级或重装插件不动数据；换电脑时把 `workbench.sqlite`（连同备份）复制过去即可，平时建议自己定期备份这个文件。跨月任务仍是同一条记录，过月已完成的任务只读。
+- 单机单用户设计；界面文案目前只有中文，暂未接 DSH 多语言。
 
-    npm run check
-    npm run test:task
-    npm run test:idea
-    npm run test:review
-    npm run test:cross
+## 人和 AI 怎么分工
 
-Tests use temporary data roots under os.tmpdir() and never touch real user data. Use the test group for the changed domain; the full suite is reserved for releases, cross-domain shared changes, and CI.
+| AI 可以做 | 只有你能做 |
+| --- | --- |
+| 读取任务、想法与复盘；新建、编辑、删除任务和想法内容 | 完成任务 / 撤销完成 |
+| 通过随包的 14 个 `tw_*` 工具（任务 7 个、想法 5 个、复盘只读 2 个）整理安排 | 改变想法状态 |
+| 帮你把散落的事项收进工作台 | 写、改、清空复盘正文 |
 
-Reload the plugin after Host changes and refresh the page after Client changes. Use an isolated temporary dataRoot for development tests.
+界面和 AI 走同一套 Service、同一个数据库，不会出现两份数据对不上；上面这几件「只有人能做」的事，服务端也会直接拦下。
 
-## Scope
+## 暂时还不支持
 
-**Included:** Today / This week / task list; continuous task time intervals (start/end hour, defaults derived); view, create, edit, delete, complete/undo; week/month overview and read-only month calendar on the week page; idea list, search, filters, and state management; daily/weekly/monthly reviews, review materials, and read-only historical lookup.
+任务月份历史浏览、旧版 Markdown 导入、重复任务与提醒推送、想法一键转任务、看板、自动归档、复盘统计图表、更早周期补写、日历时间块匹配、AI 认领/执行/验收、多端同步。
 
-**Not included:** task month-history browser, legacy Markdown import, recurrence, reminders, idea-to-task conversion, kanban, automatic archiving, review statistics, older-period backfilling, time-block matching, or AI claiming/execution/review workflows.
+## 常见问题
 
-## Docs
+**升级到 0.6.x 后，0.5.0 的数据去哪了？** 旧版用 Markdown，当前版本用 SQLite，两代数据不互通；旧文件保持原样，不会被读取或导入。
 
-- [Documentation index](docs/README.md)
-- [Feature specification](docs/01-功能规格.md)
-- [Implementation architecture](docs/02-实现架构.md)
-- [Architecture diagram](docs/03-整体架构图.html)
-- [Collaboration and testing](docs/05-协作与测试.md)
-- [Release and update guide](docs/04-发布与更新.md)
-- [Contribution rules](CONTRIBUTING.md)
+**插件删了或重装，任务会没吗？** 不会。数据库在独立数据根里，重装后指向同一个 `dataRoot` 即可。
 
-## License
+**手机上能看吗？** 目前是单机单用户设计，没有同步服务，只能在装了 DSH 的这台机器上用。
+
+**AI 会替我标完成、替我写复盘吗？** 不会。这两类操作没有对应的 AI 工具，服务端也会拒绝。
+
+## 更多文档
+
+- [文档索引](docs/README.md)
+- [功能规格](docs/01-功能规格.md)
+- [实现架构](docs/02-实现架构.md)
+- [整体架构图](docs/03-整体架构图.html)
+- [发布与更新](docs/04-发布与更新.md)
+- [协作与测试](docs/05-协作与测试.md)
+- [任务时间模型](docs/06-任务时间模型.md)
+- [随包 AI 技能说明](skills/task-workbench/SKILL.md)
+- [贡献规则](CONTRIBUTING.md)（英文）
+
+想参与开发或改代码：先读 [AGENTS.md](AGENTS.md) 与[文档索引](docs/README.md)，测试一律使用临时数据根，不要指向真实数据。
+
+## 许可证
 
 [MIT](LICENSE)
